@@ -6,13 +6,14 @@ import { ExtractedDataPreview } from '@/components/ExtractedDataPreview';
 import { ObjectionDocument } from '@/components/ObjectionDocument';
 import { extractTextFromPDF, extractNotarialData } from '@/utils/pdfParser';
 import { generateObjectionDocument } from '@/utils/generateObjection';
-import type { ParsedDocument } from '@/types/notarial';
+import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
 
 const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedDocument, setParsedDocument] = useState<ParsedDocument | null>(null);
+  const [currentData, setCurrentData] = useState<NotarialData | null>(null);
   const [objectionText, setObjectionText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,6 +21,7 @@ const Index = () => {
     setIsProcessing(true);
     setError(null);
     setParsedDocument(null);
+    setCurrentData(null);
     setObjectionText(null);
 
     try {
@@ -31,18 +33,26 @@ const Index = () => {
 
       const parsed = extractNotarialData(text);
       setParsedDocument(parsed);
+      setCurrentData(parsed.extractedData);
 
-      if (parsed.isValid) {
-        const objection = generateObjectionDocument(parsed.extractedData);
-        setObjectionText(objection);
-      } else {
-        setError('Не удалось извлечь основные данные из документа. Проверьте, что загружен корректный PDF исполнительной надписи.');
-      }
     } catch (err) {
       console.error('Error processing PDF:', err);
       setError(err instanceof Error ? err.message : 'Ошибка при обработке PDF файла');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDataChange = (updatedData: NotarialData) => {
+    setCurrentData(updatedData);
+    // Clear objection if data changed
+    setObjectionText(null);
+  };
+
+  const handleGenerate = () => {
+    if (currentData) {
+      const objection = generateObjectionDocument(currentData);
+      setObjectionText(objection);
     }
   };
 
@@ -57,13 +67,13 @@ const Index = () => {
             <PDFUploader
               onFileSelect={handleFileSelect}
               isProcessing={isProcessing}
-              isProcessed={!!parsedDocument && parsedDocument.isValid}
+              isProcessed={!!parsedDocument}
               error={error}
             />
           </section>
 
           {/* Extracted Data Section */}
-          {parsedDocument && (
+          {parsedDocument && currentData && (
             <>
               <div className="flex justify-center">
                 <ArrowDown className="h-8 w-8 text-gold animate-bounce" />
@@ -71,8 +81,10 @@ const Index = () => {
               
               <section>
                 <ExtractedDataPreview
-                  data={parsedDocument.extractedData}
+                  data={currentData}
                   errors={parsedDocument.errors}
+                  onDataChange={handleDataChange}
+                  onGenerate={handleGenerate}
                 />
               </section>
             </>
@@ -98,7 +110,7 @@ const Index = () => {
               <div className="grid md:grid-cols-3 gap-6 mt-6">
                 {[
                   { step: '1', title: 'Загрузите PDF', desc: 'Исполнительная надпись нотариуса из Е-Нотариат' },
-                  { step: '2', title: 'Автоматическая обработка', desc: 'Извлечение всех необходимых данных' },
+                  { step: '2', title: 'Проверьте данные', desc: 'Отредактируйте при необходимости' },
                   { step: '3', title: 'Готовый документ', desc: 'Возражение в официальном формате РК' },
                 ].map((item) => (
                   <div key={item.step} className="p-6 rounded-lg bg-card shadow-card border">
