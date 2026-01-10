@@ -1,12 +1,39 @@
-import * as pdfjsLib from 'pdfjs-dist';
 import type { NotarialData, ParsedDocument } from '@/types/notarial';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
+// Declare the global pdfjsLib that will be loaded from CDN
+declare global {
+  interface Window {
+    pdfjsLib: any;
+  }
+}
+
+let pdfjsLoaded = false;
+
+async function loadPdfJs(): Promise<void> {
+  if (pdfjsLoaded && window.pdfjsLib) {
+    return;
+  }
+
+  return new Promise((resolve, reject) => {
+    // Load main library
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLoaded = true;
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(script);
+  });
+}
 
 export async function extractTextFromPDF(file: File): Promise<string> {
+  await loadPdfJs();
+  
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   
   let fullText = '';
   
