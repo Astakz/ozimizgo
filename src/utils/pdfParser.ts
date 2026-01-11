@@ -144,6 +144,12 @@ export function extractNotarialData(text: string): ParsedDocument {
     /задолженност[ьи][:\s]*([\d\s,\.]+)\s*(?:тенге|тг|₸)/i,
   ], 'Сумма задолженности');
 
+  // Extract debt amount in words
+  const debtAmountWords = findPattern([
+    /задолженность\s+в\s+сумме\s+[\d\s,\.]+\s*тенге\s*\(([^)]+)\)/i,
+    /сумм[аыу]\s+[\d\s,\.]+\s*тенге\s*\(([^)]+)\)/i,
+  ], 'Сумма прописью');
+
   // Extract notary expenses - format: "расходы по совершению исполнительной надписи в сумме 6223 тенге"
   const notaryExpenses = findPattern([
     /расход[а-яё]*\s+(?:по\s+совершению\s+)?(?:исполнительной\s+надписи\s+)?в\s+сумме\s+([\d\s,\.]+)\s*тенге/i,
@@ -158,6 +164,12 @@ export function extractNotarialData(text: string): ParsedDocument {
     /общ[а-яё]+\s+сумм[а-яё]*[:\s]*([\d\s,\.]+)\s*(?:тенге|тг|₸)/i,
     /всего\s+(?:к\s+)?взыскани[юя][:\s]*([\d\s,\.]+)\s*(?:тенге|тг|₸)/i,
   ], 'Общая сумма взыскания');
+
+  // Extract total amount in words
+  const totalAmountWords = findPattern([
+    /Общая\s+сумма[,\s]+подлежащая\s+взысканию[,\s]+составляет\s+[\d\s,\.]+\s*тенге\s*\(([^)]+)\)/i,
+    /общ[а-яё]+\s+сумм[а-яё]*\s+[\d\s,\.]+\s*тенге\s*\(([^)]+)\)/i,
+  ], 'Общая сумма прописью');
 
   // Format amounts - replace comma with dot, remove spaces
   const formatAmount = (amount: string): string => {
@@ -176,10 +188,13 @@ export function extractNotarialData(text: string): ParsedDocument {
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).join(' '),
     debtorIIN,
+    debtorEmail: '',
     creditorName: cleanCreditorName,
     debtAmount: formatAmount(debtAmount),
+    debtAmountWords: debtAmountWords,
     notaryExpenses: formatAmount(notaryExpenses),
     totalAmount: formatAmount(totalAmount),
+    totalAmountWords: totalAmountWords,
   };
 
   // Check if we have minimum required fields

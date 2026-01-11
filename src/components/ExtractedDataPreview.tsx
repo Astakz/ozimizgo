@@ -39,9 +39,9 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
     { key: 'enforcementDate', icon: Calendar, label: 'Дата' },
     { key: 'debtorName', icon: User, label: 'Должник', sublabelKey: 'debtorIIN' },
     { key: 'creditorName', icon: Building2, label: 'Взыскатель' },
-    { key: 'debtAmount', icon: Banknote, label: 'Сумма задолженности' },
+    { key: 'debtAmount', icon: Banknote, label: 'Сумма задолженности', sublabelKey: 'debtAmountWords' },
     { key: 'notaryExpenses', icon: Banknote, label: 'Расходы нотариуса' },
-    { key: 'totalAmount', icon: Banknote, label: 'Общая сумма', highlight: true },
+    { key: 'totalAmount', icon: Banknote, label: 'Общая сумма', sublabelKey: 'totalAmountWords', highlight: true },
   ];
 
   const allFields: { key: keyof NotarialData; label: string }[] = [
@@ -52,10 +52,13 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
     { key: 'registryNumber', label: 'Номер реестра' },
     { key: 'debtorName', label: 'ФИО должника' },
     { key: 'debtorIIN', label: 'ИИН должника' },
+    { key: 'debtorEmail', label: 'Эл. почта должника' },
     { key: 'creditorName', label: 'Наименование взыскателя' },
     { key: 'debtAmount', label: 'Сумма задолженности (тенге)' },
+    { key: 'debtAmountWords', label: 'Сумма задолженности прописью' },
     { key: 'notaryExpenses', label: 'Расходы нотариуса (тенге)' },
     { key: 'totalAmount', label: 'Общая сумма взыскания (тенге)' },
+    { key: 'totalAmountWords', label: 'Общая сумма прописью' },
   ];
 
   if (isEditing) {
@@ -163,6 +166,8 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
                       {field.sublabelKey === 'notaryLicense' && `Лицензия № ${data[field.sublabelKey]}`}
                       {field.sublabelKey === 'registryNumber' && `Реестр № ${data[field.sublabelKey]}`}
                       {field.sublabelKey === 'debtorIIN' && `ИИН: ${data[field.sublabelKey]}`}
+                      {field.sublabelKey === 'debtAmountWords' && data[field.sublabelKey]}
+                      {field.sublabelKey === 'totalAmountWords' && data[field.sublabelKey]}
                     </p>
                   )}
                 </div>

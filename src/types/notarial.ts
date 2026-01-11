@@ -6,10 +6,13 @@ export interface NotarialData {
   registryNumber: string;
   debtorName: string;
   debtorIIN: string;
+  debtorEmail: string;
   creditorName: string;
   debtAmount: string;
+  debtAmountWords: string;
   notaryExpenses: string;
   totalAmount: string;
+  totalAmountWords: string;
 }
 
 export interface ParsedDocument {
