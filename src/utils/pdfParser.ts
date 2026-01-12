@@ -80,12 +80,12 @@ export function extractNotarialData(text: string): ParsedDocument {
     /лицензи[яи]\s+(\d+)/i,
   ], 'Номер лицензии');
 
-  // Extract unique enforcement number - format: "Уникальный номер 007684/447" or from registry
+  // Extract enforcement number from registry line - format: "Зарегистрировано в реестре за №7684"
   const enforcementNumber = findPattern([
+    /Зарегистрировано\s+в\s+реестре\s+за\s+№\s*(\d+)/i,
+    /реестр[а-яё]*\s*(?:за\s*)?№\s*(\d+)/i,
     /Уникальный\s+номер\s+(\d+\/?\d*)/i,
     /Бірегей\s+нөмір\s+(\d+\/?\d*)/i,
-    /реестр[а-яё]*\s*(?:за\s*)?№?\s*(\d+)/i,
-    /Зарегистрировано\s+в\s+реестре\s+за\s+№\s*(\d+)/i,
   ], 'Номер исполнительной надписи');
 
   // Extract date - format: "«9» сентября 2024г." or "Дата создания 2024г."
