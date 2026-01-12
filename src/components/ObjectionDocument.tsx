@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Copy, Download, Check, Printer } from 'lucide-react';
+import { FileText, Copy, Download, Check, Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
+import { loadCyrillicFonts, addCyrillicFonts, areFontsLoaded } from '@/utils/pdfFonts';
 
 interface ObjectionDocumentProps {
   documentText: string;
@@ -13,7 +14,13 @@ interface ObjectionDocumentProps {
 export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
   const [copied, setCopied] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
+
+  // Preload fonts on component mount
+  useEffect(() => {
+    loadCyrillicFonts();
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(documentText);
@@ -26,78 +33,101 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
   };
 
   const handleDownloadPDF = async () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    // Add Cyrillic font support
-    doc.setFont('helvetica');
+    setIsGeneratingPDF(true);
     
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const maxWidth = pageWidth - margin * 2;
-    let yPosition = margin;
-    const lineHeight = 6;
-
-    // Split text into lines
-    const lines = documentText.split('\n');
-    
-    for (const line of lines) {
-      // Check if we need a new page
-      if (yPosition > pageHeight - margin - 20) {
-        doc.addPage();
-        yPosition = margin;
+    try {
+      // Ensure fonts are loaded
+      if (!areFontsLoaded()) {
+        await loadCyrillicFonts();
       }
 
-      if (line.trim() === '') {
-        yPosition += lineHeight / 2;
-        continue;
-      }
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-      // Handle long lines by splitting them
-      const splitLines = doc.splitTextToSize(line, maxWidth);
+      // Add Cyrillic fonts to this document
+      addCyrillicFonts(doc);
       
-      for (const splitLine of splitLines) {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - margin * 2;
+      let yPosition = margin;
+      const lineHeight = 6;
+
+      // Set default font
+      const fontName = areFontsLoaded() ? 'PTSans' : 'helvetica';
+
+      // Split text into lines
+      const lines = documentText.split('\n');
+      
+      for (const line of lines) {
+        // Check if we need a new page
         if (yPosition > pageHeight - margin - 20) {
           doc.addPage();
           yPosition = margin;
         }
+
+        if (line.trim() === '') {
+          yPosition += lineHeight / 2;
+          continue;
+        }
+
+        // Handle long lines by splitting them
+        doc.setFont(fontName, 'normal');
+        doc.setFontSize(11);
+        const splitLines = doc.splitTextToSize(line, maxWidth);
         
-        // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС)
-        if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text(splitLine, pageWidth / 2, yPosition, { align: 'center' });
-        } else {
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          doc.text(splitLine, margin, yPosition);
+        for (const splitLine of splitLines) {
+          if (yPosition > pageHeight - margin - 20) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          
+          // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС)
+          if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
+            doc.setFontSize(14);
+            doc.setFont(fontName, 'bold');
+            doc.text(splitLine, pageWidth / 2, yPosition, { align: 'center' });
+          } else {
+            doc.setFontSize(11);
+            doc.setFont(fontName, 'normal');
+            doc.text(splitLine, margin, yPosition);
+          }
+          
+          yPosition += lineHeight;
+        }
+      }
+
+      // Add signature if exists
+      if (signatureDataUrl) {
+        if (yPosition > pageHeight - margin - 30) {
+          doc.addPage();
+          yPosition = margin;
         }
         
-        yPosition += lineHeight;
+        yPosition += 10;
+        doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
       }
-    }
 
-    // Add signature if exists
-    if (signatureDataUrl) {
-      if (yPosition > pageHeight - margin - 30) {
-        doc.addPage();
-        yPosition = margin;
-      }
+      doc.save('Возражение_на_исполнительную_надпись.pdf');
       
-      yPosition += 10;
-      doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
+      toast({
+        title: "PDF скачан!",
+        description: "Документ сохранён на ваше устройство",
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось сгенерировать PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
     }
-
-    doc.save('Возражение_на_исполнительную_надпись.pdf');
-    
-    toast({
-      title: "PDF скачан!",
-      description: "Документ сохранён на ваше устройство",
-    });
   };
 
   const handlePrint = () => {
@@ -163,9 +193,14 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
                 size="sm"
                 onClick={handleDownloadPDF}
                 className="gold-button"
+                disabled={isGeneratingPDF}
               >
-                <Download className="h-4 w-4 mr-1" />
-                Скачать PDF
+                {isGeneratingPDF ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-1" />
+                )}
+                {isGeneratingPDF ? 'Генерация...' : 'Скачать PDF'}
               </Button>
               <Button
                 variant="secondary"
