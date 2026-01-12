@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { jsPDF } from 'jspdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Copy, Download, Check, Printer } from 'lucide-react';
@@ -24,20 +25,78 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([documentText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Возражение_на_исполнительную_надпись.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownloadPDF = async () => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    // Add Cyrillic font support
+    doc.setFont('helvetica');
+    
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    let yPosition = margin;
+    const lineHeight = 6;
+
+    // Split text into lines
+    const lines = documentText.split('\n');
+    
+    for (const line of lines) {
+      // Check if we need a new page
+      if (yPosition > pageHeight - margin - 20) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      if (line.trim() === '') {
+        yPosition += lineHeight / 2;
+        continue;
+      }
+
+      // Handle long lines by splitting them
+      const splitLines = doc.splitTextToSize(line, maxWidth);
+      
+      for (const splitLine of splitLines) {
+        if (yPosition > pageHeight - margin - 20) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        
+        // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС)
+        if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(splitLine, pageWidth / 2, yPosition, { align: 'center' });
+        } else {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.text(splitLine, margin, yPosition);
+        }
+        
+        yPosition += lineHeight;
+      }
+    }
+
+    // Add signature if exists
+    if (signatureDataUrl) {
+      if (yPosition > pageHeight - margin - 30) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      yPosition += 10;
+      doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
+    }
+
+    doc.save('Возражение_на_исполнительную_надпись.pdf');
     
     toast({
-      title: "Документ скачан!",
-      description: "Файл сохранён на ваше устройство",
+      title: "PDF скачан!",
+      description: "Документ сохранён на ваше устройство",
     });
   };
 
@@ -54,12 +113,21 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         <head>
           <title>Возражение на исполнительную надпись</title>
           <style>
+            @page {
+              size: A4;
+              margin: 2cm;
+            }
             body {
               font-family: 'Times New Roman', Times, serif;
               font-size: 14pt;
               line-height: 1.8;
               padding: 2cm;
               white-space: pre-wrap;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
             }
           </style>
         </head>
@@ -93,11 +161,11 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={handleDownload}
+                onClick={handleDownloadPDF}
                 className="gold-button"
               >
                 <Download className="h-4 w-4 mr-1" />
-                Скачать
+                Скачать PDF
               </Button>
               <Button
                 variant="secondary"
