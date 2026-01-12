@@ -48,7 +48,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       });
 
       // Add Cyrillic fonts to this document
-      addCyrillicFonts(doc);
+      const fontsAdded = addCyrillicFonts(doc);
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -58,7 +58,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       const lineHeight = 6;
 
       // Set default font
-      const fontName = areFontsLoaded() ? 'PTSans' : 'helvetica';
+      const fontName = fontsAdded ? 'Roboto' : 'helvetica';
 
       // Split text into lines
       const lines = documentText.split('\n');
