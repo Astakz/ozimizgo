@@ -1,22 +1,20 @@
 import { jsPDF } from 'jspdf';
 
-// PT Sans Regular font (subset with Cyrillic support)
-const PT_SANS_NORMAL_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.8/files/pt-sans-cyrillic-400-normal.woff';
-const PT_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/pt-sans@5.0.8/files/pt-sans-cyrillic-700-normal.woff';
+// Using Google Fonts CDN for TTF format (jsPDF requires TTF, not WOFF)
+const ROBOTO_REGULAR_URL = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5Q.ttf';
+const ROBOTO_BOLD_URL = 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAw.ttf';
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
-  const blob = await response.blob();
+  const arrayBuffer = await response.arrayBuffer();
   
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+  // Convert ArrayBuffer to base64
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 let fontsLoaded = false;
@@ -28,24 +26,33 @@ export async function loadCyrillicFonts(): Promise<void> {
   
   try {
     [normalFontBase64, boldFontBase64] = await Promise.all([
-      fetchFontAsBase64(PT_SANS_NORMAL_URL),
-      fetchFontAsBase64(PT_SANS_BOLD_URL),
+      fetchFontAsBase64(ROBOTO_REGULAR_URL),
+      fetchFontAsBase64(ROBOTO_BOLD_URL),
     ]);
     fontsLoaded = true;
+    console.log('Cyrillic fonts loaded successfully');
   } catch (error) {
     console.error('Failed to load Cyrillic fonts:', error);
   }
 }
 
-export function addCyrillicFonts(doc: jsPDF): void {
-  if (normalFontBase64) {
-    doc.addFileToVFS('PTSans-Regular.ttf', normalFontBase64);
-    doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal');
+export function addCyrillicFonts(doc: jsPDF): boolean {
+  if (!normalFontBase64 || !boldFontBase64) {
+    console.warn('Fonts not loaded, using default');
+    return false;
   }
   
-  if (boldFontBase64) {
-    doc.addFileToVFS('PTSans-Bold.ttf', boldFontBase64);
-    doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold');
+  try {
+    doc.addFileToVFS('Roboto-Regular.ttf', normalFontBase64);
+    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+    
+    doc.addFileToVFS('Roboto-Bold.ttf', boldFontBase64);
+    doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to add fonts to PDF:', error);
+    return false;
   }
 }
 
