@@ -11,7 +11,7 @@ export function generateObjectionDocument(data: NotarialData): string {
   const creditorDisplay = data.creditorName;
 
   const document = `Нотариусу ${data.notaryName}
-Лицензия ${data.notaryLicense}
+Лицензия № ${data.notaryLicense}
 от: ${data.debtorName}
 ИИН ${data.debtorIIN}
 Эл. почта: ${data.debtorEmail || '________________________'}
