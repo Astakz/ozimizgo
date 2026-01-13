@@ -215,15 +215,17 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="legal-document p-8 md:p-12 max-h-[70vh] overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm md:text-base leading-relaxed font-legal text-foreground">
-              {documentText}
-            </pre>
-            {signatureDataUrl && (
-              <div className="mt-4">
-                <img src={signatureDataUrl} alt="Подпись" className="max-h-20" />
-              </div>
-            )}
+          <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
+            <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12">
+              <pre className="whitespace-pre-wrap text-[13px] md:text-[14px] leading-[1.8] font-mono text-gray-900" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+                {documentText}
+              </pre>
+              {signatureDataUrl && (
+                <div className="mt-6 ml-0">
+                  <img src={signatureDataUrl} alt="Подпись" className="max-h-16" />
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
