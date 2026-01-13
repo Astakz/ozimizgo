@@ -86,11 +86,20 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
             yPosition = margin;
           }
           
-          // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС)
-          if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
+          // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС, Основание)
+          const trimmedLine = line.trim();
+          if (trimmedLine === 'ВОЗРАЖЕНИЕ' || trimmedLine.startsWith('на исполнительную надпись')) {
             doc.setFontSize(14);
             doc.setFont(fontName, 'bold');
-            doc.text(splitLine, pageWidth / 2, yPosition, { align: 'center' });
+            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+          } else if (trimmedLine.startsWith('Основание №')) {
+            doc.setFontSize(12);
+            doc.setFont(fontName, 'bold');
+            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+          } else if (trimmedLine.includes('ПРОШУ ВАС')) {
+            doc.setFontSize(12);
+            doc.setFont(fontName, 'bold');
+            doc.text(splitLine, margin, yPosition);
           } else {
             doc.setFontSize(11);
             doc.setFont(fontName, 'normal');
