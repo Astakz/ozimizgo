@@ -5,7 +5,7 @@ import { PDFUploader } from '@/components/PDFUploader';
 import { ExtractedDataPreview } from '@/components/ExtractedDataPreview';
 import { ObjectionDocument } from '@/components/ObjectionDocument';
 import { extractTextFromPDF, extractNotarialData } from '@/utils/pdfParser';
-import { generateObjectionDocument } from '@/utils/generateObjection';
+import { generateObjectionDocumentText } from '@/utils/generateObjection';
 import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
@@ -51,7 +51,7 @@ const Index = () => {
 
   const handleGenerate = () => {
     if (currentData) {
-      const objection = generateObjectionDocument(currentData);
+      const objection = generateObjectionDocumentText(currentData);
       setObjectionText(objection);
     }
   };

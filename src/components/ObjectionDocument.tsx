@@ -6,12 +6,14 @@ import { FileText, Copy, Download, Check, Printer, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
 import { loadCyrillicFonts, addCyrillicFonts, areFontsLoaded } from '@/utils/pdfFonts';
+import type { DocumentSection } from '@/utils/generateObjection';
 
 interface ObjectionDocumentProps {
   documentText: string;
+  documentSections?: DocumentSection[];
 }
 
-export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
+export function ObjectionDocument({ documentText, documentSections }: ObjectionDocumentProps) {
   const [copied, setCopied] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -90,7 +92,22 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
           if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
             doc.setFontSize(14);
             doc.setFont(fontName, 'bold');
-            doc.text(splitLine, pageWidth / 2, yPosition, { align: 'center' });
+            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+          } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
+            doc.setFontSize(11);
+            doc.setFont(fontName, 'italic');
+            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+          } else if (line.startsWith('                                                                     ')) {
+            // Right-aligned header
+            doc.setFontSize(11);
+            if (line.includes('Нотариусу') || line.includes('Лицензия') || line.includes('ИИН') || line.includes('Эл. почта')) {
+              doc.setFont(fontName, 'italic');
+            } else if (line.includes('от:')) {
+              doc.setFont(fontName, 'bold');
+            } else {
+              doc.setFont(fontName, 'normal');
+            }
+            doc.text(splitLine.trim(), pageWidth - margin, yPosition, { align: 'right' });
           } else {
             doc.setFontSize(11);
             doc.setFont(fontName, 'normal');
@@ -152,7 +169,45 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
               font-size: 14pt;
               line-height: 1.8;
               padding: 2cm;
-              white-space: pre-wrap;
+            }
+            .header {
+              text-align: right;
+              margin-bottom: 30px;
+            }
+            .header-line {
+              margin: 2px 0;
+            }
+            .header-italic {
+              font-style: italic;
+            }
+            .header-bold {
+              font-weight: bold;
+            }
+            .title {
+              text-align: center;
+              font-weight: bold;
+              font-size: 16pt;
+              margin: 20px 0 10px 0;
+            }
+            .subtitle {
+              text-align: center;
+              font-style: italic;
+              margin: 5px 0;
+            }
+            .body-text {
+              text-align: justify;
+              margin: 15px 0;
+              text-indent: 30px;
+            }
+            .body-text-no-indent {
+              text-align: justify;
+              margin: 15px 0;
+            }
+            .underline {
+              text-decoration: underline;
+            }
+            .signature-section {
+              margin-top: 40px;
             }
             @media print {
               body {
@@ -161,12 +216,145 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
             }
           </style>
         </head>
-        <body>${documentText}${signatureHtml}</body>
+        <body>
+          <div class="document-content">${formatForPrint(documentText)}</div>
+          ${signatureHtml}
+        </body>
         </html>
       `);
       printWindow.document.close();
       printWindow.print();
     }
+  };
+
+  const formatForPrint = (text: string): string => {
+    const lines = text.split('\n');
+    let html = '';
+    let inHeader = true;
+    let headerContent = '';
+
+    for (const line of lines) {
+      if (line.trim() === '') {
+        if (inHeader && headerContent) {
+          html += `<div class="header">${headerContent}</div>`;
+          headerContent = '';
+          inHeader = false;
+        }
+        continue;
+      }
+
+      if (inHeader && line.startsWith('                                                                     ')) {
+        const content = line.trim();
+        if (content.includes('Нотариусу') || content.includes('Лицензия') || content.includes('ИИН') || content.includes('Эл. почта')) {
+          headerContent += `<div class="header-line header-italic">${content}</div>`;
+        } else if (content.includes('от:')) {
+          headerContent += `<div class="header-line header-bold">${content}</div>`;
+        } else {
+          headerContent += `<div class="header-line">${content}</div>`;
+        }
+      } else if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
+        inHeader = false;
+        html += `<div class="title">${line.trim()}</div>`;
+      } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
+        html += `<div class="subtitle">${line.trim()}</div>`;
+      } else {
+        inHeader = false;
+        html += `<p class="body-text-no-indent">${line}</p>`;
+      }
+    }
+
+    return html;
+  };
+
+  const renderFormattedDocument = () => {
+    const lines = documentText.split('\n');
+    const elements: JSX.Element[] = [];
+    let headerLines: string[] = [];
+    let inHeader = true;
+    let key = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (line.trim() === '') {
+        if (inHeader && headerLines.length > 0) {
+          elements.push(
+            <div key={key++} className="text-right mb-8">
+              {headerLines.map((hl, idx) => {
+                const content = hl.trim();
+                let className = "text-sm leading-relaxed";
+                if (content.includes('Нотариусу') || content.includes('Лицензия') || content.includes('ИИН') || content.includes('Эл. почта')) {
+                  className += " italic";
+                } else if (content.includes('от:')) {
+                  className += " font-bold";
+                }
+                return <div key={idx} className={className}>{content}</div>;
+              })}
+            </div>
+          );
+          headerLines = [];
+          inHeader = false;
+        }
+        continue;
+      }
+
+      if (inHeader && line.startsWith('                                                                     ')) {
+        headerLines.push(line);
+      } else if (line.includes('ВОЗРАЖЕНИЕ') && !line.includes('на исполнительную')) {
+        inHeader = false;
+        elements.push(
+          <h1 key={key++} className="text-center font-bold text-xl mt-8 mb-2">
+            {line.trim()}
+          </h1>
+        );
+      } else if (line.includes('ПРОШУ ВАС')) {
+        elements.push(
+          <h2 key={key++} className="text-center font-bold text-lg mt-8 mb-4">
+            {line.trim()}
+          </h2>
+        );
+      } else if (line.includes('на исполнительную надпись нотариуса')) {
+        elements.push(
+          <div key={key++} className="text-center italic text-sm mb-1">
+            {line.trim()}
+          </div>
+        );
+      } else if (line.match(/^\s+№\s/)) {
+        elements.push(
+          <div key={key++} className="text-center italic text-sm mb-6">
+            {line.trim()}
+          </div>
+        );
+      } else if (line.includes('На основании выше сказанного')) {
+        elements.push(
+          <p key={key++} className="text-sm leading-relaxed mt-6 mb-2">
+            {line}
+          </p>
+        );
+      } else if (line.includes('(подпись)')) {
+        elements.push(
+          <div key={key++} className="mt-8 flex justify-between items-end">
+            <span className="text-sm">{line.split('(подпись)')[0].trim()}</span>
+            <span className="text-sm italic">(подпись)</span>
+          </div>
+        );
+      } else if (line.includes('«____»')) {
+        elements.push(
+          <div key={key++} className="mt-4 text-sm">
+            {line}
+          </div>
+        );
+      } else {
+        inHeader = false;
+        elements.push(
+          <p key={key++} className="text-sm leading-relaxed text-justify my-3">
+            {line}
+          </p>
+        );
+      }
+    }
+
+    return elements;
   };
 
   return (
@@ -216,10 +404,8 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
-            <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12">
-              <pre className="whitespace-pre-wrap text-[13px] md:text-[14px] leading-[1.8] font-mono text-gray-900" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
-                {documentText}
-              </pre>
+            <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+              {renderFormattedDocument()}
               {signatureDataUrl && (
                 <div className="mt-6 ml-0">
                   <img src={signatureDataUrl} alt="Подпись" className="max-h-16" />
