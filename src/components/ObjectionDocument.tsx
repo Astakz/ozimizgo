@@ -331,11 +331,10 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
             {line}
           </p>
         );
-      } else if (line.includes('(подпись)')) {
+      } else if (line.includes('Подпись:')) {
         elements.push(
-          <div key={key++} className="mt-8 flex justify-between items-end">
-            <span className="text-sm">{line.split('(подпись)')[0].trim()}</span>
-            <span className="text-sm italic">(подпись)</span>
+          <div key={key++} className="mt-2 text-sm">
+            {line}
           </div>
         );
       } else if (line.includes('«____»')) {
