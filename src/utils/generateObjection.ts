@@ -95,8 +95,11 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
       content: `Постановление об отмене исполнительной надписи направить на эл. почту: ${data.debtorEmail || '________________________'}`
     },
 
-    // Signature section
-    { type: 'signature', align: 'left', content: `${data.debtorName}                                                     (подпись)` },
+    // Signature section - ФИО и подпись
+    { type: 'signature', align: 'left', content: data.debtorName },
+    { type: 'signature', align: 'left', content: 'Подпись: ____________________' },
+    
+    // Дата составления возражения
     { type: 'date', align: 'left', content: `«____» _________________ ${new Date().getFullYear()} г.` },
   ];
 
@@ -140,7 +143,9 @@ ${data.enforcementDate} года мной была получена исполн
 Постановление об отмене исполнительной надписи направить на эл. почту: ${data.debtorEmail || '________________________'}
 
 
-${data.debtorName}                                                     (подпись)
+${data.debtorName}
+
+Подпись: ____________________
 
 «____» _________________ ${new Date().getFullYear()} г.`;
 }
