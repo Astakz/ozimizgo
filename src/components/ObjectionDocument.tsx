@@ -60,7 +60,7 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
       const lineHeight = 6;
 
       // Set default font
-      const fontName = fontsAdded ? 'Roboto' : 'helvetica';
+      const fontName = fontsAdded ? 'PTSans' : 'helvetica';
 
       // Split text into lines
       const lines = documentText.split('\n');

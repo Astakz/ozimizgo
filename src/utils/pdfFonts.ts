@@ -1,11 +1,14 @@
 import { jsPDF } from 'jspdf';
 
-// Using Google Fonts CDN for TTF format (jsPDF requires TTF, not WOFF)
-const ROBOTO_REGULAR_URL = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5Q.ttf';
-const ROBOTO_BOLD_URL = 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAw.ttf';
+// PT Sans with Cyrillic support - proper TTF files
+const PT_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/gh/nicholaswmin/font-files@master/PTSans-Regular.ttf';
+const PT_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/gh/nicholaswmin/font-files@master/PTSans-Bold.ttf';
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch font: ${response.status}`);
+  }
   const arrayBuffer = await response.arrayBuffer();
   
   // Convert ArrayBuffer to base64
@@ -18,21 +21,27 @@ async function fetchFontAsBase64(url: string): Promise<string> {
 }
 
 let fontsLoaded = false;
+let fontsLoading = false;
 let normalFontBase64: string | null = null;
 let boldFontBase64: string | null = null;
 
 export async function loadCyrillicFonts(): Promise<void> {
-  if (fontsLoaded) return;
+  if (fontsLoaded || fontsLoading) return;
+  
+  fontsLoading = true;
   
   try {
+    console.log('Loading Cyrillic fonts...');
     [normalFontBase64, boldFontBase64] = await Promise.all([
-      fetchFontAsBase64(ROBOTO_REGULAR_URL),
-      fetchFontAsBase64(ROBOTO_BOLD_URL),
+      fetchFontAsBase64(PT_SANS_REGULAR_URL),
+      fetchFontAsBase64(PT_SANS_BOLD_URL),
     ]);
     fontsLoaded = true;
     console.log('Cyrillic fonts loaded successfully');
   } catch (error) {
     console.error('Failed to load Cyrillic fonts:', error);
+    fontsLoading = false;
+    throw error;
   }
 }
 
@@ -43,11 +52,11 @@ export function addCyrillicFonts(doc: jsPDF): boolean {
   }
   
   try {
-    doc.addFileToVFS('Roboto-Regular.ttf', normalFontBase64);
-    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+    doc.addFileToVFS('PTSans-Regular.ttf', normalFontBase64);
+    doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal');
     
-    doc.addFileToVFS('Roboto-Bold.ttf', boldFontBase64);
-    doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+    doc.addFileToVFS('PTSans-Bold.ttf', boldFontBase64);
+    doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold');
     
     return true;
   } catch (error) {
