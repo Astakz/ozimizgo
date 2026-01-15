@@ -333,8 +333,13 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
         );
       } else if (line.includes('Подпись:')) {
         elements.push(
-          <div key={key++} className="mt-2 text-sm">
-            {line}
+          <div key={key++} className="mt-2 text-sm flex items-end gap-2">
+            <span>Подпись:</span>
+            {signatureDataUrl ? (
+              <img src={signatureDataUrl} alt="Подпись" className="h-12 inline-block" />
+            ) : (
+              <span className="inline-block w-48 border-b border-gray-400"></span>
+            )}
           </div>
         );
       } else if (line.includes('«____»')) {
@@ -405,11 +410,6 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
           <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
             <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
               {renderFormattedDocument()}
-              {signatureDataUrl && (
-                <div className="mt-6 ml-0">
-                  <img src={signatureDataUrl} alt="Подпись" className="max-h-16" />
-                </div>
-              )}
             </div>
           </div>
         </CardContent>
