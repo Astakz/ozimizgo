@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { FileSearch, User, Building2, Banknote, Hash, Calendar, AlertTriangle, Pencil, Check, FileText } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { FileSearch, User, Building2, Banknote, Hash, Calendar, CalendarIcon, AlertTriangle, Pencil, Check, FileText } from 'lucide-react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import type { NotarialData } from '@/types/notarial';
 
 interface ExtractedDataPreviewProps {
@@ -17,6 +22,33 @@ interface ExtractedDataPreviewProps {
 export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }: ExtractedDataPreviewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<NotarialData>(data);
+  const [objectionDate, setObjectionDate] = useState<Date | undefined>(new Date());
+
+  // Форматирование даты в формат «15» января 2026 г.
+  const formatObjectionDate = (date: Date): string => {
+    const day = format(date, 'd', { locale: ru });
+    const month = format(date, 'MMMM', { locale: ru });
+    const year = format(date, 'yyyy', { locale: ru });
+    return `«${day}» ${month} ${year} г.`;
+  };
+
+  // Автозаполнение даты при первом рендере
+  useEffect(() => {
+    if (!data.objectionDate && objectionDate) {
+      const formattedDate = formatObjectionDate(objectionDate);
+      onDataChange({ ...data, objectionDate: formattedDate });
+    }
+  }, []);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setObjectionDate(date);
+    if (date) {
+      const formattedDate = formatObjectionDate(date);
+      const updated = { ...editedData, objectionDate: formattedDate };
+      setEditedData(updated);
+      onDataChange(updated);
+    }
+  };
 
   const handleFieldChange = (field: keyof NotarialData, value: string) => {
     const updated = { ...editedData, [field]: value };
@@ -44,6 +76,7 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
     { key: 'totalAmount', icon: Banknote, label: 'Общая сумма', sublabelKey: 'totalAmountWords', highlight: true },
   ];
 
+  // Поля для режима редактирования (без objectionDate - он редактируется через календарь)
   const allFields: { key: keyof NotarialData; label: string }[] = [
     { key: 'notaryName', label: 'ФИО нотариуса' },
     { key: 'notaryLicense', label: 'Номер лицензии' },
@@ -59,7 +92,6 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
     { key: 'notaryExpenses', label: 'Расходы нотариуса (тенге)' },
     { key: 'totalAmount', label: 'Общая сумма взыскания (тенге)' },
     { key: 'totalAmountWords', label: 'Общая сумма прописью' },
-    { key: 'objectionDate', label: 'Дата составления возражения' },
   ];
 
   if (isEditing) {
@@ -180,6 +212,37 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Дата составления возражения с календарём */}
+        <div className="mt-6 p-4 rounded-lg border bg-muted/20 border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-navy-medium" />
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Дата составления возражения</p>
+                <p className="font-medium">{data.objectionDate || 'Не указана'}</p>
+              </div>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  Изменить дату
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={objectionDate}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  locale={ru}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         <div className="mt-6 pt-6 border-t">
