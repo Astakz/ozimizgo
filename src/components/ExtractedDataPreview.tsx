@@ -59,6 +59,7 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
     { key: 'notaryExpenses', label: 'Расходы нотариуса (тенге)' },
     { key: 'totalAmount', label: 'Общая сумма взыскания (тенге)' },
     { key: 'totalAmountWords', label: 'Общая сумма прописью' },
+    { key: 'objectionDate', label: 'Дата составления возражения' },
   ];
 
   if (isEditing) {
