@@ -100,7 +100,7 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
     { type: 'signature', align: 'left', content: 'Подпись: ____________________' },
     
     // Дата составления возражения
-    { type: 'date', align: 'left', content: `«____» _________________ ${new Date().getFullYear()} г.` },
+    { type: 'date', align: 'left', content: data.objectionDate || `«____» _________________ ${new Date().getFullYear()} г.` },
   ];
 
   return sections;
@@ -147,5 +147,5 @@ ${data.debtorName}
 
 Подпись: ____________________
 
-«____» _________________ ${new Date().getFullYear()} г.`;
+${data.objectionDate || `«____» _________________ ${new Date().getFullYear()} г.`}`;
 }

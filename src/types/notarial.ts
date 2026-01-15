@@ -13,6 +13,7 @@ export interface NotarialData {
   notaryExpenses: string;
   totalAmount: string;
   totalAmountWords: string;
+  objectionDate: string; // Дата составления возражения
 }
 
 export interface ParsedDocument {

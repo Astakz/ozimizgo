@@ -195,6 +195,7 @@ export function extractNotarialData(text: string): ParsedDocument {
     notaryExpenses: formatAmount(notaryExpenses),
     totalAmount: formatAmount(totalAmount),
     totalAmountWords: totalAmountWords,
+    objectionDate: '', // Будет заполнено пользователем
   };
 
   // Check if we have minimum required fields
