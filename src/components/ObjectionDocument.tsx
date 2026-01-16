@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Copy, Download, Check, Printer, Loader2 } from 'lucide-react';
+import { FileText, Copy, Download, Check, Printer, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
+import { PDFPreviewModal } from './PDFPreviewModal';
 import { loadCyrillicFonts, addCyrillicFonts } from '@/utils/pdfFonts';
 import type { DocumentSection } from '@/utils/generateObjection';
 
@@ -13,16 +14,27 @@ interface ObjectionDocumentProps {
   documentSections?: DocumentSection[];
 }
 
-export function ObjectionDocument({ documentText, documentSections }: ObjectionDocumentProps) {
+export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
   const [copied, setCopied] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Preload fonts on component mount
   useEffect(() => {
     loadCyrillicFonts();
   }, []);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [pdfBlobUrl]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(documentText);
@@ -34,100 +46,144 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true);
+  const generatePDFDocument = useCallback(async (): Promise<jsPDF> => {
+    await loadCyrillicFonts();
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const fontsAdded = addCyrillicFonts(doc);
     
-    try {
-      // Ensure Cyrillic fonts are loaded (awaits ongoing load too)
-      await loadCyrillicFonts();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    let yPosition = margin;
+    const lineHeight = 6;
 
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
+    const fontName = fontsAdded ? 'PTSans' : 'helvetica';
+    const italicStyle = fontsAdded ? 'normal' : 'italic';
 
-      // Add Cyrillic fonts to this document
-      const fontsAdded = addCyrillicFonts(doc);
+    const lines = documentText.split('\n');
+    
+    for (const line of lines) {
+      if (yPosition > pageHeight - margin - 20) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      if (line.trim() === '') {
+        yPosition += lineHeight / 2;
+        continue;
+      }
+
+      doc.setFont(fontName, 'normal');
+      doc.setFontSize(11);
+      const splitLines = doc.splitTextToSize(line, maxWidth);
       
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const maxWidth = pageWidth - margin * 2;
-      let yPosition = margin;
-      const lineHeight = 6;
-
-      // Set default font
-      const fontName = fontsAdded ? 'PTSans' : 'helvetica';
-      const italicStyle = fontsAdded ? 'normal' : 'italic';
-
-      // Split text into lines
-      const lines = documentText.split('\n');
-      
-      for (const line of lines) {
-        // Check if we need a new page
+      for (const splitLine of splitLines) {
         if (yPosition > pageHeight - margin - 20) {
           doc.addPage();
           yPosition = margin;
         }
-
-        if (line.trim() === '') {
-          yPosition += lineHeight / 2;
-          continue;
-        }
-
-        // Handle long lines by splitting them
-        doc.setFont(fontName, 'normal');
-        doc.setFontSize(11);
-        const splitLines = doc.splitTextToSize(line, maxWidth);
         
-        for (const splitLine of splitLines) {
-          if (yPosition > pageHeight - margin - 20) {
-            doc.addPage();
-            yPosition = margin;
-          }
-          
-          // Check for centered text (ВОЗРАЖЕНИЕ, ПРОШУ ВАС)
-          if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
-            doc.setFontSize(14);
-            doc.setFont(fontName, 'bold');
-            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
-          } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
-            doc.setFontSize(11);
+        if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
+          doc.setFontSize(14);
+          doc.setFont(fontName, 'bold');
+          doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+        } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
+          doc.setFontSize(11);
+          doc.setFont(fontName, italicStyle);
+          doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
+        } else if (line.startsWith('                                                                     ')) {
+          doc.setFontSize(11);
+          if (line.includes('Нотариусу') || line.includes('Лицензия') || line.includes('ИИН') || line.includes('Эл. почта')) {
             doc.setFont(fontName, italicStyle);
-            doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
-          } else if (line.startsWith('                                                                     ')) {
-            // Right-aligned header
-            doc.setFontSize(11);
-            if (line.includes('Нотариусу') || line.includes('Лицензия') || line.includes('ИИН') || line.includes('Эл. почта')) {
-              doc.setFont(fontName, italicStyle);
-            } else if (line.includes('от:')) {
-              doc.setFont(fontName, 'bold');
-            } else {
-              doc.setFont(fontName, 'normal');
-            }
-            doc.text(splitLine.trim(), pageWidth - margin, yPosition, { align: 'right' });
+          } else if (line.includes('от:')) {
+            doc.setFont(fontName, 'bold');
           } else {
-            doc.setFontSize(11);
             doc.setFont(fontName, 'normal');
-            doc.text(splitLine, margin, yPosition);
           }
-          
-          yPosition += lineHeight;
-        }
-      }
-
-      // Add signature if exists
-      if (signatureDataUrl) {
-        if (yPosition > pageHeight - margin - 30) {
-          doc.addPage();
-          yPosition = margin;
+          doc.text(splitLine.trim(), pageWidth - margin, yPosition, { align: 'right' });
+        } else {
+          doc.setFontSize(11);
+          doc.setFont(fontName, 'normal');
+          doc.text(splitLine, margin, yPosition);
         }
         
-        yPosition += 10;
-        doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
+        yPosition += lineHeight;
       }
+    }
 
+    if (signatureDataUrl) {
+      if (yPosition > pageHeight - margin - 30) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      yPosition += 10;
+      doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
+    }
+
+    return doc;
+  }, [documentText, signatureDataUrl]);
+
+  const handlePreviewPDF = async () => {
+    setIsGeneratingPDF(true);
+    setIsPreviewOpen(true);
+    
+    // Cleanup previous blob URL
+    if (pdfBlobUrl) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
+    }
+    
+    try {
+      const doc = await generatePDFDocument();
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось сгенерировать PDF",
+        variant: "destructive",
+      });
+      setIsPreviewOpen(false);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleDownloadFromPreview = () => {
+    if (pdfBlobUrl) {
+      const link = document.createElement('a');
+      link.href = pdfBlobUrl;
+      link.download = 'Возражение_на_исполнительную_надпись.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "PDF скачан!",
+        description: "Документ сохранён на ваше устройство",
+      });
+    }
+  };
+
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    
+    try {
+      const doc = await generatePDFDocument();
       doc.save('Возражение_на_исполнительную_надпись.pdf');
       
       toast({
@@ -361,60 +417,80 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-elevated animate-fade-in">
-        <CardHeader className="border-b navy-gradient text-primary-foreground">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-6 w-6 text-gold" />
-              Готовое возражение
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                className="gold-button"
-              >
-                {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                {copied ? 'Скопировано' : 'Копировать'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleDownloadPDF}
-                className="gold-button"
-                disabled={isGeneratingPDF}
-              >
-                {isGeneratingPDF ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-1" />
-                )}
-                {isGeneratingPDF ? 'Генерация...' : 'Скачать PDF'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handlePrint}
-                className="gold-button"
-              >
-                <Printer className="h-4 w-4 mr-1" />
-                Печать
-              </Button>
+    <>
+      <div className="space-y-6">
+        <Card className="shadow-elevated animate-fade-in">
+          <CardHeader className="border-b navy-gradient text-primary-foreground">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <FileText className="h-6 w-6 text-gold" />
+                Готовое возражение
+              </CardTitle>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="gold-button"
+                >
+                  {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+                  {copied ? 'Скопировано' : 'Копировать'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handlePreviewPDF}
+                  className="gold-button"
+                  disabled={isGeneratingPDF}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  Предпросмотр
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleDownloadPDF}
+                  className="gold-button"
+                  disabled={isGeneratingPDF}
+                >
+                  {isGeneratingPDF ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-1" />
+                  )}
+                  {isGeneratingPDF ? 'Генерация...' : 'Скачать PDF'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="gold-button"
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  Печать
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
-            <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-              {renderFormattedDocument()}
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
+              <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                {renderFormattedDocument()}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <SignaturePad onSignatureChange={setSignatureDataUrl} />
-    </div>
+        <SignaturePad onSignatureChange={setSignatureDataUrl} />
+      </div>
+
+      <PDFPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={handleClosePreview}
+        pdfBlobUrl={pdfBlobUrl}
+        onDownload={handleDownloadFromPreview}
+        isLoading={isGeneratingPDF}
+      />
+    </>
   );
 }
