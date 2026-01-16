@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Copy, Download, Check, Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
-import { loadCyrillicFonts, addCyrillicFonts, areFontsLoaded } from '@/utils/pdfFonts';
+import { loadCyrillicFonts, addCyrillicFonts } from '@/utils/pdfFonts';
 import type { DocumentSection } from '@/utils/generateObjection';
 
 interface ObjectionDocumentProps {
@@ -38,10 +38,8 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
     setIsGeneratingPDF(true);
     
     try {
-      // Ensure fonts are loaded
-      if (!areFontsLoaded()) {
-        await loadCyrillicFonts();
-      }
+      // Ensure Cyrillic fonts are loaded (awaits ongoing load too)
+      await loadCyrillicFonts();
 
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -61,6 +59,7 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
 
       // Set default font
       const fontName = fontsAdded ? 'PTSans' : 'helvetica';
+      const italicStyle = fontsAdded ? 'normal' : 'italic';
 
       // Split text into lines
       const lines = documentText.split('\n');
@@ -95,13 +94,13 @@ export function ObjectionDocument({ documentText, documentSections }: ObjectionD
             doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
           } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
             doc.setFontSize(11);
-            doc.setFont(fontName, 'italic');
+            doc.setFont(fontName, italicStyle);
             doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
           } else if (line.startsWith('                                                                     ')) {
             // Right-aligned header
             doc.setFontSize(11);
             if (line.includes('Нотариусу') || line.includes('Лицензия') || line.includes('ИИН') || line.includes('Эл. почта')) {
-              doc.setFont(fontName, 'italic');
+              doc.setFont(fontName, italicStyle);
             } else if (line.includes('от:')) {
               doc.setFont(fontName, 'bold');
             } else {

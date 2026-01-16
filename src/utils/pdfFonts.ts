@@ -21,28 +21,32 @@ async function fetchFontAsBase64(url: string): Promise<string> {
 }
 
 let fontsLoaded = false;
-let fontsLoading = false;
 let normalFontBase64: string | null = null;
 let boldFontBase64: string | null = null;
+let loadPromise: Promise<void> | null = null;
 
-export async function loadCyrillicFonts(): Promise<void> {
-  if (fontsLoaded || fontsLoading) return;
-  
-  fontsLoading = true;
-  
-  try {
+export function loadCyrillicFonts(): Promise<void> {
+  if (fontsLoaded) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+
+  loadPromise = (async () => {
     console.log('Loading Cyrillic fonts...');
+
     [normalFontBase64, boldFontBase64] = await Promise.all([
       fetchFontAsBase64(PT_SANS_REGULAR_URL),
       fetchFontAsBase64(PT_SANS_BOLD_URL),
     ]);
+
     fontsLoaded = true;
     console.log('Cyrillic fonts loaded successfully');
-  } catch (error) {
+  })().catch((error) => {
+    // Allow retry after failure
+    loadPromise = null;
     console.error('Failed to load Cyrillic fonts:', error);
-    fontsLoading = false;
     throw error;
-  }
+  });
+
+  return loadPromise;
 }
 
 export function addCyrillicFonts(doc: jsPDF): boolean {
