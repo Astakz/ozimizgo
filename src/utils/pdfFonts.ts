@@ -57,11 +57,12 @@ export function addCyrillicFonts(doc: jsPDF): boolean {
   
   try {
     doc.addFileToVFS('PTSans-Regular.ttf', normalFontBase64);
-    doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal');
-    
+    // Use Identity-H to ensure proper Unicode (Cyrillic) mapping in the PDF
+    doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal', 'Identity-H');
+
     doc.addFileToVFS('PTSans-Bold.ttf', boldFontBase64);
-    doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold');
-    
+    doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold', 'Identity-H');
+
     return true;
   } catch (error) {
     console.error('Failed to add fonts to PDF:', error);
