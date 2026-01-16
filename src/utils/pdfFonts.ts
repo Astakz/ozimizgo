@@ -1,8 +1,8 @@
 import { jsPDF } from 'jspdf';
 
-// PT Sans with Cyrillic support - proper TTF files
-const PT_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/gh/nicholaswmin/font-files@master/PTSans-Regular.ttf';
-const PT_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/gh/nicholaswmin/font-files@master/PTSans-Bold.ttf';
+// PT Sans with Cyrillic support from Google Fonts
+const PT_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/fontsource/fonts/pt-sans@latest/cyrillic-400-normal.ttf';
+const PT_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/fontsource/fonts/pt-sans@latest/cyrillic-700-normal.ttf';
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
