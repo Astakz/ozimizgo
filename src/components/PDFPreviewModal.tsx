@@ -1,7 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, X, Loader2 } from 'lucide-react';
+import { Download, Loader2, ExternalLink } from 'lucide-react';
+
+async function ensurePdfJsLoaded(): Promise<void> {
+  // pdfjsLib is declared globally in src/utils/pdfParser.ts
+  if (window.pdfjsLib) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(script);
+  });
+}
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
@@ -18,55 +35,134 @@ export function PDFPreviewModal({
   onDownload,
   isLoading = false,
 }: PDFPreviewModalProps) {
+  const [pageImages, setPageImages] = useState<string[]>([]);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [isRendering, setIsRendering] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function renderWithPdfJs(url: string) {
+      setIsRendering(true);
+      setRenderError(null);
+      setPageImages([]);
+
+      try {
+        await ensurePdfJsLoaded();
+        const res = await fetch(url);
+        const data = await res.arrayBuffer();
+
+        const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+
+        const images: string[] = [];
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.6 });
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas not supported');
+
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          images.push(canvas.toDataURL('image/png'));
+        }
+
+        if (!cancelled) setPageImages(images);
+      } catch (e) {
+        if (!cancelled) {
+          setRenderError('Не удалось отобразить предпросмотр в окне. Откройте PDF в новой вкладке.');
+        }
+      } finally {
+        if (!cancelled) setIsRendering(false);
+      }
+    }
+
+    if (isOpen && pdfBlobUrl && !isLoading) {
+      renderWithPdfJs(pdfBlobUrl);
+    } else {
+      setPageImages([]);
+      setRenderError(null);
+      setIsRendering(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, pdfBlobUrl, isLoading]);
+
+  const canOpenExternally = !!pdfBlobUrl;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">
-              Предпросмотр документа
-            </DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Предпросмотр документа</DialogTitle>
             <div className="flex items-center gap-2">
               <Button
-                onClick={onDownload}
+                onClick={() => {
+                  if (pdfBlobUrl) window.open(pdfBlobUrl, '_blank', 'noopener,noreferrer');
+                }}
+                variant="secondary"
                 className="gold-button"
-                disabled={!pdfBlobUrl}
+                disabled={!canOpenExternally}
               >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Открыть
+              </Button>
+              <Button onClick={onDownload} className="gold-button" disabled={!pdfBlobUrl}>
                 <Download className="h-4 w-4 mr-2" />
                 Скачать PDF
               </Button>
             </div>
           </div>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-hidden bg-muted">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-3 text-muted-foreground">Генерация PDF...</span>
             </div>
-          ) : pdfBlobUrl ? (
-            <object
-              data={pdfBlobUrl}
-              type="application/pdf"
-              className="w-full h-full border-0"
-              aria-label="PDF Preview"
-            >
-              <embed
-                src={pdfBlobUrl}
-                type="application/pdf"
-                className="w-full h-full"
-              />
-              <p className="p-4 text-center text-muted-foreground">
-                Ваш браузер не поддерживает встроенный просмотр PDF.{' '}
-                <a href={pdfBlobUrl} download="preview.pdf" className="text-primary underline">
-                  Скачайте файл
-                </a>
-              </p>
-            </object>
-          ) : (
+          ) : !pdfBlobUrl ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Ошибка загрузки предпросмотра
+            </div>
+          ) : isRendering ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Загрузка предпросмотра...</span>
+            </div>
+          ) : pageImages.length > 0 ? (
+            <div className="h-full overflow-auto p-4">
+              <div className="mx-auto max-w-[900px] space-y-4">
+                {pageImages.map((src, idx) => (
+                  <img
+                    key={idx}
+                    src={src}
+                    alt={`Страница ${idx + 1} PDF`}
+                    loading="lazy"
+                    className="w-full h-auto rounded-md border bg-background"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+              <p className="max-w-[520px]">{renderError ?? 'Не удалось отобразить предпросмотр.'}</p>
+              <div className="mt-4">
+                <Button
+                  onClick={() => {
+                    if (pdfBlobUrl) window.open(pdfBlobUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="gold-button"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Открыть PDF
+                </Button>
+              </div>
             </div>
           )}
         </div>
