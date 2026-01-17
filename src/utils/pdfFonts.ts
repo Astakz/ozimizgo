@@ -1,13 +1,12 @@
 import { jsPDF } from 'jspdf';
 
-// Use Noto Sans with full Cyrillic + Latin + extended Unicode support
-// These fonts have much broader character coverage than PT Sans
-const NOTO_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-cyrillic-ext-400-normal.woff';
-const NOTO_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-cyrillic-ext-700-normal.woff';
-
-// Fallback to DejaVu Sans which has excellent Unicode coverage
+// Primary: DejaVu Sans (TTF) — excellent Unicode/Cyrillic coverage
 const DEJAVU_REGULAR_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
 const DEJAVU_BOLD_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf';
+
+// Fallback: Noto Sans (TTF). IMPORTANT: jsPDF needs TTF, not WOFF.
+const NOTO_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.11/files/noto-sans-cyrillic-ext-400-normal.ttf';
+const NOTO_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans@5.0.11/files/noto-sans-cyrillic-ext-700-normal.ttf';
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -38,15 +37,13 @@ export function loadCyrillicFonts(): Promise<void> {
     console.log('Loading Cyrillic fonts (DejaVu Sans)...');
 
     try {
-      // Try DejaVu Sans first - it has the best Unicode coverage for legal documents
       [normalFontBase64, boldFontBase64] = await Promise.all([
         fetchFontAsBase64(DEJAVU_REGULAR_URL),
         fetchFontAsBase64(DEJAVU_BOLD_URL),
       ]);
       console.log('DejaVu Sans fonts loaded successfully');
     } catch (error) {
-      console.warn('DejaVu fonts failed, trying Noto Sans...', error);
-      // Fallback to Noto Sans
+      console.warn('DejaVu fonts failed, trying Noto Sans (TTF)...', error);
       [normalFontBase64, boldFontBase64] = await Promise.all([
         fetchFontAsBase64(NOTO_SANS_REGULAR_URL),
         fetchFontAsBase64(NOTO_SANS_BOLD_URL),
@@ -73,10 +70,11 @@ export function addCyrillicFonts(doc: jsPDF): boolean {
   
   try {
     doc.addFileToVFS('CyrillicFont-Regular.ttf', normalFontBase64);
-    doc.addFont('CyrillicFont-Regular.ttf', 'CyrillicFont', 'normal');
+    // Identity-H ensures correct Unicode mapping (Cyrillic, №, quotes, etc.)
+    doc.addFont('CyrillicFont-Regular.ttf', 'CyrillicFont', 'normal', 'Identity-H');
 
     doc.addFileToVFS('CyrillicFont-Bold.ttf', boldFontBase64);
-    doc.addFont('CyrillicFont-Bold.ttf', 'CyrillicFont', 'bold');
+    doc.addFont('CyrillicFont-Bold.ttf', 'CyrillicFont', 'bold', 'Identity-H');
 
     return true;
   } catch (error) {
