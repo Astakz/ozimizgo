@@ -1,8 +1,13 @@
 import { jsPDF } from 'jspdf';
 
-// PT Sans with Cyrillic support from Google Fonts
-const PT_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/fontsource/fonts/pt-sans@latest/cyrillic-400-normal.ttf';
-const PT_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/fontsource/fonts/pt-sans@latest/cyrillic-700-normal.ttf';
+// Use Noto Sans with full Cyrillic + Latin + extended Unicode support
+// These fonts have much broader character coverage than PT Sans
+const NOTO_SANS_REGULAR_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-cyrillic-ext-400-normal.woff';
+const NOTO_SANS_BOLD_URL = 'https://cdn.jsdelivr.net/npm/@fontsource/noto-sans/files/noto-sans-cyrillic-ext-700-normal.woff';
+
+// Fallback to DejaVu Sans which has excellent Unicode coverage
+const DEJAVU_REGULAR_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+const DEJAVU_BOLD_URL = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf';
 
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
@@ -30,15 +35,26 @@ export function loadCyrillicFonts(): Promise<void> {
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
-    console.log('Loading Cyrillic fonts...');
+    console.log('Loading Cyrillic fonts (DejaVu Sans)...');
 
-    [normalFontBase64, boldFontBase64] = await Promise.all([
-      fetchFontAsBase64(PT_SANS_REGULAR_URL),
-      fetchFontAsBase64(PT_SANS_BOLD_URL),
-    ]);
+    try {
+      // Try DejaVu Sans first - it has the best Unicode coverage for legal documents
+      [normalFontBase64, boldFontBase64] = await Promise.all([
+        fetchFontAsBase64(DEJAVU_REGULAR_URL),
+        fetchFontAsBase64(DEJAVU_BOLD_URL),
+      ]);
+      console.log('DejaVu Sans fonts loaded successfully');
+    } catch (error) {
+      console.warn('DejaVu fonts failed, trying Noto Sans...', error);
+      // Fallback to Noto Sans
+      [normalFontBase64, boldFontBase64] = await Promise.all([
+        fetchFontAsBase64(NOTO_SANS_REGULAR_URL),
+        fetchFontAsBase64(NOTO_SANS_BOLD_URL),
+      ]);
+      console.log('Noto Sans fonts loaded successfully');
+    }
 
     fontsLoaded = true;
-    console.log('Cyrillic fonts loaded successfully');
   })().catch((error) => {
     // Allow retry after failure
     loadPromise = null;
@@ -56,12 +72,11 @@ export function addCyrillicFonts(doc: jsPDF): boolean {
   }
   
   try {
-    doc.addFileToVFS('PTSans-Regular.ttf', normalFontBase64);
-    // Use Identity-H to ensure proper Unicode (Cyrillic) mapping in the PDF
-    doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal', 'Identity-H');
+    doc.addFileToVFS('CyrillicFont-Regular.ttf', normalFontBase64);
+    doc.addFont('CyrillicFont-Regular.ttf', 'CyrillicFont', 'normal');
 
-    doc.addFileToVFS('PTSans-Bold.ttf', boldFontBase64);
-    doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold', 'Identity-H');
+    doc.addFileToVFS('CyrillicFont-Bold.ttf', boldFontBase64);
+    doc.addFont('CyrillicFont-Bold.ttf', 'CyrillicFont', 'bold');
 
     return true;
   } catch (error) {

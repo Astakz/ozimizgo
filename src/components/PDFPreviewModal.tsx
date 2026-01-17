@@ -46,11 +46,24 @@ export function PDFPreviewModal({
               <span className="ml-3 text-muted-foreground">Генерация PDF...</span>
             </div>
           ) : pdfBlobUrl ? (
-            <iframe
-              src={pdfBlobUrl}
+            <object
+              data={pdfBlobUrl}
+              type="application/pdf"
               className="w-full h-full border-0"
-              title="PDF Preview"
-            />
+              aria-label="PDF Preview"
+            >
+              <embed
+                src={pdfBlobUrl}
+                type="application/pdf"
+                className="w-full h-full"
+              />
+              <p className="p-4 text-center text-muted-foreground">
+                Ваш браузер не поддерживает встроенный просмотр PDF.{' '}
+                <a href={pdfBlobUrl} download="preview.pdf" className="text-primary underline">
+                  Скачайте файл
+                </a>
+              </p>
+            </object>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Ошибка загрузки предпросмотра
