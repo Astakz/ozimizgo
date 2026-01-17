@@ -64,8 +64,9 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     let yPosition = margin;
     const lineHeight = 6;
 
-    const fontName = fontsAdded ? 'PTSans' : 'helvetica';
-    const italicStyle = fontsAdded ? 'normal' : 'italic';
+    const fontName = fontsAdded ? 'CyrillicFont' : 'helvetica';
+    // DejaVu/Noto doesn't have italic, use normal for both
+    const italicStyle = 'normal';
 
     const lines = documentText.split('\n');
     
