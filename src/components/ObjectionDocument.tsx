@@ -394,11 +394,11 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
                 className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12 relative" 
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                {/* Watermark logo */}
+                {/* Watermark logo - bottom right, lowest layer */}
                 <img 
                   src="/watermark-logo.png" 
                   alt="" 
-                  className="absolute top-4 left-4 w-16 h-16 opacity-15 pointer-events-none select-none"
+                  className="absolute bottom-4 right-4 w-16 h-16 opacity-15 pointer-events-none select-none -z-10"
                   aria-hidden="true"
                 />
                 {renderFormattedDocument()}
