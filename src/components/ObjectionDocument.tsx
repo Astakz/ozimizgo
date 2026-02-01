@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Copy, Download, Check, Printer, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
 import { PDFPreviewModal } from './PDFPreviewModal';
+import { loadCyrillicFonts, addCyrillicFonts } from '@/utils/pdfFonts';
 import type { DocumentSection } from '@/utils/generateObjection';
 
 interface ObjectionDocumentProps {
@@ -42,30 +42,10 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Generate PDF from visual representation using html2canvas
+  // Generate PDF with selectable text using jsPDF text rendering
   const generatePDFDocument = useCallback(async (): Promise<jsPDF> => {
-    if (!documentRef.current) {
-      throw new Error('Document element not found');
-    }
-
-    // Create a clone for PDF generation to avoid affecting the visible document
-    const element = documentRef.current;
-    
-    // Capture the document as canvas with high quality
-    const canvas = await html2canvas(element, {
-      scale: 2, // Higher resolution for better quality
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    
-    // A4 dimensions in mm
-    const pdfWidth = 210;
-    const pdfHeight = 297;
-    const margin = 10;
+    // Load fonts first
+    await loadCyrillicFonts();
     
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -73,59 +53,157 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       format: 'a4',
     });
 
-    // Calculate dimensions to fit A4 with margins
-    const contentWidth = pdfWidth - margin * 2;
-    const imgAspectRatio = canvas.width / canvas.height;
-    const contentHeight = contentWidth / imgAspectRatio;
-    
-    // If content fits on one page
-    if (contentHeight <= pdfHeight - margin * 2) {
-      doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
-    } else {
-      // Multi-page support: split the image across pages
-      const pageContentHeight = pdfHeight - margin * 2;
-      const scaledImgHeight = (canvas.height * contentWidth) / canvas.width;
-      let remainingHeight = scaledImgHeight;
-      let yOffset = 0;
-      let pageNum = 0;
+    // Add Cyrillic fonts
+    const fontsAdded = addCyrillicFonts(doc);
+    if (fontsAdded) {
+      doc.setFont('CyrillicFont', 'normal');
+    }
 
-      while (remainingHeight > 0) {
-        if (pageNum > 0) {
-          doc.addPage();
+    // A4 dimensions
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginLeft = 20;
+    const marginRight = 20;
+    const marginTop = 20;
+    const marginBottom = 20;
+    const contentWidth = pageWidth - marginLeft - marginRight;
+
+    let y = marginTop;
+    const lineHeight = 6;
+    const fontSize = 12;
+    const headerFontSize = 10;
+    const titleFontSize = 14;
+
+    const lines = documentText.split('\n');
+    let inHeader = true;
+
+    const addNewPageIfNeeded = (requiredSpace: number) => {
+      if (y + requiredSpace > pageHeight - marginBottom) {
+        doc.addPage();
+        y = marginTop;
+        return true;
+      }
+      return false;
+    };
+
+    const wrapText = (text: string, maxWidth: number, size: number): string[] => {
+      doc.setFontSize(size);
+      return doc.splitTextToSize(text, maxWidth);
+    };
+
+    for (const line of lines) {
+      if (line.trim() === '') {
+        y += lineHeight * 0.5;
+        continue;
+      }
+
+      // Header lines (right-aligned, at the top)
+      if (inHeader && line.startsWith('                                                                     ')) {
+        const content = line.trim();
+        doc.setFontSize(headerFontSize);
+        if (fontsAdded) {
+          if (content.includes('от:')) {
+            doc.setFont('CyrillicFont', 'bold');
+          } else {
+            doc.setFont('CyrillicFont', 'normal');
+          }
         }
-
-        // Calculate source crop for this page
-        const sourceY = (yOffset / scaledImgHeight) * canvas.height;
-        const sourceHeight = Math.min(
-          (pageContentHeight / scaledImgHeight) * canvas.height,
-          canvas.height - sourceY
-        );
-        const destHeight = Math.min(pageContentHeight, remainingHeight);
-
-        // Create a temporary canvas for this page section
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        const pageCtx = pageCanvas.getContext('2d');
         
-        if (pageCtx) {
-          pageCtx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          );
-          const pageImgData = pageCanvas.toDataURL('image/png');
-          doc.addImage(pageImgData, 'PNG', margin, margin, contentWidth, destHeight);
-        }
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, pageWidth - marginRight - textWidth, y);
+        y += lineHeight * 0.8;
+        continue;
+      }
 
-        yOffset += pageContentHeight;
-        remainingHeight -= pageContentHeight;
-        pageNum++;
+      // Title "ВОЗРАЖЕНИЕ"
+      if (line.includes('ВОЗРАЖЕНИЕ') && !line.includes('на исполнительную')) {
+        inHeader = false;
+        y += lineHeight;
+        addNewPageIfNeeded(lineHeight * 2);
+        
+        doc.setFontSize(titleFontSize);
+        if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
+        
+        const content = line.trim();
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, (pageWidth - textWidth) / 2, y);
+        y += lineHeight * 1.5;
+        continue;
+      }
+
+      // Subtitle
+      if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
+        doc.setFontSize(fontSize - 1);
+        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+        
+        const content = line.trim();
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, (pageWidth - textWidth) / 2, y);
+        y += lineHeight;
+        continue;
+      }
+
+      // "ПРОШУ ВАС" section
+      if (line.includes('ПРОШУ ВАС')) {
+        y += lineHeight;
+        addNewPageIfNeeded(lineHeight * 2);
+        
+        doc.setFontSize(titleFontSize);
+        if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
+        
+        const content = line.trim();
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, (pageWidth - textWidth) / 2, y);
+        y += lineHeight * 1.5;
+        continue;
+      }
+
+      // Signature line
+      if (line.includes('Подпись:')) {
+        addNewPageIfNeeded(lineHeight * 3);
+        y += lineHeight;
+        
+        doc.setFontSize(fontSize);
+        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+        doc.text('Подпись: ____________________', marginLeft, y);
+        
+        // Add signature image if available
+        if (signatureDataUrl) {
+          try {
+            doc.addImage(signatureDataUrl, 'PNG', marginLeft + 20, y - 8, 40, 12);
+          } catch (e) {
+            console.warn('Could not add signature image:', e);
+          }
+        }
+        y += lineHeight * 1.5;
+        continue;
+      }
+
+      // Date line
+      if (line.includes('«____»')) {
+        addNewPageIfNeeded(lineHeight);
+        doc.setFontSize(fontSize);
+        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+        doc.text(line.trim(), marginLeft, y);
+        y += lineHeight;
+        continue;
+      }
+
+      // Regular paragraph text
+      inHeader = false;
+      doc.setFontSize(fontSize);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      
+      const wrapped = wrapText(line.trim(), contentWidth, fontSize);
+      for (const wLine of wrapped) {
+        addNewPageIfNeeded(lineHeight);
+        doc.text(wLine, marginLeft, y);
+        y += lineHeight;
       }
     }
 
     return doc;
-  }, []);
+  }, [documentText, signatureDataUrl]);
 
   const handlePreviewPDF = async () => {
     setIsGeneratingPDF(true);
