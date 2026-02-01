@@ -47,10 +47,8 @@ export async function generateSelectablePDF(
   // Add watermark logo to each page
   const addWatermark = () => {
     try {
-      // Position: top-right corner, small size, low opacity
-      // jsPDF doesn't support opacity directly, so we use a pre-made semi-transparent image
-      // or just add the image (it should already be light)
-      doc.addImage(watermarkLogo, 'PNG', PAGE_WIDTH - MARGIN_RIGHT - 20, MARGIN_TOP, 20, 20);
+      // Position: top-left corner, small size
+      doc.addImage(watermarkLogo, 'PNG', MARGIN_LEFT, MARGIN_TOP, 20, 20);
     } catch (e) {
       console.warn('Failed to add watermark:', e);
     }
