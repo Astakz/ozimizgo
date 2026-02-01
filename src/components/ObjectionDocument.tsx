@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Copy, Download, Check, Printer, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
 import { PDFPreviewModal } from './PDFPreviewModal';
-import { loadCyrillicFonts, addCyrillicFonts } from '@/utils/pdfFonts';
 import type { DocumentSection } from '@/utils/generateObjection';
 
 interface ObjectionDocumentProps {
@@ -21,11 +21,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const { toast } = useToast();
-
-  // Preload fonts on component mount
-  useEffect(() => {
-    loadCyrillicFonts();
-  }, []);
+  const documentRef = useRef<HTMLDivElement>(null);
 
   // Cleanup blob URL on unmount
   useEffect(() => {
@@ -46,91 +42,90 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Generate PDF from visual representation using html2canvas
   const generatePDFDocument = useCallback(async (): Promise<jsPDF> => {
-    await loadCyrillicFonts();
+    if (!documentRef.current) {
+      throw new Error('Document element not found');
+    }
 
+    // Create a clone for PDF generation to avoid affecting the visible document
+    const element = documentRef.current;
+    
+    // Capture the document as canvas with high quality
+    const canvas = await html2canvas(element, {
+      scale: 2, // Higher resolution for better quality
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    
+    // A4 dimensions in mm
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const margin = 10;
+    
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
     });
 
-    const fontsAdded = addCyrillicFonts(doc);
+    // Calculate dimensions to fit A4 with margins
+    const contentWidth = pdfWidth - margin * 2;
+    const imgAspectRatio = canvas.width / canvas.height;
+    const contentHeight = contentWidth / imgAspectRatio;
     
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const maxWidth = pageWidth - margin * 2;
-    let yPosition = margin;
-    const lineHeight = 6;
+    // If content fits on one page
+    if (contentHeight <= pdfHeight - margin * 2) {
+      doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+    } else {
+      // Multi-page support: split the image across pages
+      const pageContentHeight = pdfHeight - margin * 2;
+      const scaledImgHeight = (canvas.height * contentWidth) / canvas.width;
+      let remainingHeight = scaledImgHeight;
+      let yOffset = 0;
+      let pageNum = 0;
 
-    const fontName = fontsAdded ? 'CyrillicFont' : 'helvetica';
-    // DejaVu/Noto doesn't have italic, use normal for both
-    const italicStyle = 'normal';
-
-    const lines = documentText.split('\n');
-    
-    for (const line of lines) {
-      if (yPosition > pageHeight - margin - 20) {
-        doc.addPage();
-        yPosition = margin;
-      }
-
-      if (line.trim() === '') {
-        yPosition += lineHeight / 2;
-        continue;
-      }
-
-      doc.setFont(fontName, 'normal');
-      doc.setFontSize(11);
-      const splitLines = doc.splitTextToSize(line, maxWidth);
-      
-      for (const splitLine of splitLines) {
-        if (yPosition > pageHeight - margin - 20) {
+      while (remainingHeight > 0) {
+        if (pageNum > 0) {
           doc.addPage();
-          yPosition = margin;
         }
-        
-        if (line.includes('ВОЗРАЖЕНИЕ') || line.includes('ПРОШУ ВАС')) {
-          doc.setFontSize(14);
-          doc.setFont(fontName, 'bold');
-          doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
-        } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
-          doc.setFontSize(11);
-          doc.setFont(fontName, italicStyle);
-          doc.text(splitLine.trim(), pageWidth / 2, yPosition, { align: 'center' });
-        } else if (line.startsWith('                                                                     ')) {
-          doc.setFontSize(11);
-          if (line.includes('Нотариусу') || line.includes('Лицензия') || line.includes('ИИН') || line.includes('Эл. почта')) {
-            doc.setFont(fontName, italicStyle);
-          } else if (line.includes('от:')) {
-            doc.setFont(fontName, 'bold');
-          } else {
-            doc.setFont(fontName, 'normal');
-          }
-          doc.text(splitLine.trim(), pageWidth - margin, yPosition, { align: 'right' });
-        } else {
-          doc.setFontSize(11);
-          doc.setFont(fontName, 'normal');
-          doc.text(splitLine, margin, yPosition);
-        }
-        
-        yPosition += lineHeight;
-      }
-    }
 
-    if (signatureDataUrl) {
-      if (yPosition > pageHeight - margin - 30) {
-        doc.addPage();
-        yPosition = margin;
+        // Calculate source crop for this page
+        const sourceY = (yOffset / scaledImgHeight) * canvas.height;
+        const sourceHeight = Math.min(
+          (pageContentHeight / scaledImgHeight) * canvas.height,
+          canvas.height - sourceY
+        );
+        const destHeight = Math.min(pageContentHeight, remainingHeight);
+
+        // Create a temporary canvas for this page section
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sourceHeight;
+        const pageCtx = pageCanvas.getContext('2d');
+        
+        if (pageCtx) {
+          pageCtx.drawImage(
+            canvas,
+            0, sourceY, canvas.width, sourceHeight,
+            0, 0, canvas.width, sourceHeight
+          );
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          doc.addImage(pageImgData, 'PNG', margin, margin, contentWidth, destHeight);
+        }
+
+        yOffset += pageContentHeight;
+        remainingHeight -= pageContentHeight;
+        pageNum++;
       }
-      
-      yPosition += 10;
-      doc.addImage(signatureDataUrl, 'PNG', margin, yPosition, 50, 20);
     }
 
     return doc;
-  }, [documentText, signatureDataUrl]);
+  }, []);
 
   const handlePreviewPDF = async () => {
     setIsGeneratingPDF(true);
@@ -473,9 +468,13 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+        <CardContent className="p-0">
             <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
-              <div className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+              <div 
+                ref={documentRef}
+                className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" 
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              >
                 {renderFormattedDocument()}
               </div>
             </div>
