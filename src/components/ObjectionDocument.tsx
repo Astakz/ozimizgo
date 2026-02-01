@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Copy, Download, Check, Printer, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SignaturePad } from './SignaturePad';
 import { PDFPreviewModal } from './PDFPreviewModal';
+import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 import type { DocumentSection } from '@/utils/generateObjection';
 
 interface ObjectionDocumentProps {
@@ -42,90 +41,10 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Generate PDF from visual representation using html2canvas
-  const generatePDFDocument = useCallback(async (): Promise<jsPDF> => {
-    if (!documentRef.current) {
-      throw new Error('Document element not found');
-    }
-
-    // Create a clone for PDF generation to avoid affecting the visible document
-    const element = documentRef.current;
-    
-    // Capture the document as canvas with high quality
-    const canvas = await html2canvas(element, {
-      scale: 2, // Higher resolution for better quality
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    
-    // A4 dimensions in mm
-    const pdfWidth = 210;
-    const pdfHeight = 297;
-    const margin = 10;
-    
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    // Calculate dimensions to fit A4 with margins
-    const contentWidth = pdfWidth - margin * 2;
-    const imgAspectRatio = canvas.width / canvas.height;
-    const contentHeight = contentWidth / imgAspectRatio;
-    
-    // If content fits on one page
-    if (contentHeight <= pdfHeight - margin * 2) {
-      doc.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
-    } else {
-      // Multi-page support: split the image across pages
-      const pageContentHeight = pdfHeight - margin * 2;
-      const scaledImgHeight = (canvas.height * contentWidth) / canvas.width;
-      let remainingHeight = scaledImgHeight;
-      let yOffset = 0;
-      let pageNum = 0;
-
-      while (remainingHeight > 0) {
-        if (pageNum > 0) {
-          doc.addPage();
-        }
-
-        // Calculate source crop for this page
-        const sourceY = (yOffset / scaledImgHeight) * canvas.height;
-        const sourceHeight = Math.min(
-          (pageContentHeight / scaledImgHeight) * canvas.height,
-          canvas.height - sourceY
-        );
-        const destHeight = Math.min(pageContentHeight, remainingHeight);
-
-        // Create a temporary canvas for this page section
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
-        const pageCtx = pageCanvas.getContext('2d');
-        
-        if (pageCtx) {
-          pageCtx.drawImage(
-            canvas,
-            0, sourceY, canvas.width, sourceHeight,
-            0, 0, canvas.width, sourceHeight
-          );
-          const pageImgData = pageCanvas.toDataURL('image/png');
-          doc.addImage(pageImgData, 'PNG', margin, margin, contentWidth, destHeight);
-        }
-
-        yOffset += pageContentHeight;
-        remainingHeight -= pageContentHeight;
-        pageNum++;
-      }
-    }
-
-    return doc;
-  }, []);
+  // Generate PDF with selectable text using jsPDF with Cyrillic fonts
+  const generatePDFDocument = useCallback(async () => {
+    return generateSelectablePDF(documentText, signatureDataUrl);
+  }, [documentText, signatureDataUrl]);
 
   const handlePreviewPDF = async () => {
     setIsGeneratingPDF(true);
