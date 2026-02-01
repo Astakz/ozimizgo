@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { loadCyrillicFonts, addCyrillicFonts } from './pdfFonts';
+import watermarkLogo from '@/assets/watermark-logo.png';
 
 interface TextBlock {
   text: string;
@@ -43,6 +44,21 @@ export async function generateSelectablePDF(
     doc.setFont('CyrillicFont', 'normal');
   }
 
+  // Add watermark logo to each page
+  const addWatermark = () => {
+    try {
+      // Position: top-right corner, small size, low opacity
+      // jsPDF doesn't support opacity directly, so we use a pre-made semi-transparent image
+      // or just add the image (it should already be light)
+      doc.addImage(watermarkLogo, 'PNG', PAGE_WIDTH - MARGIN_RIGHT - 20, MARGIN_TOP, 20, 20);
+    } catch (e) {
+      console.warn('Failed to add watermark:', e);
+    }
+  };
+
+  // Add watermark to first page
+  addWatermark();
+
   const lines = documentText.split('\n');
   let y = MARGIN_TOP;
   let inHeader = true;
@@ -73,6 +89,7 @@ export async function generateSelectablePDF(
       // Check page break
       if (currentY > PAGE_HEIGHT - MARGIN_BOTTOM) {
         doc.addPage();
+        addWatermark(); // Add watermark to new page
         currentY = MARGIN_TOP;
       }
 
@@ -106,6 +123,7 @@ export async function generateSelectablePDF(
         // Check page break
         if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
           doc.addPage();
+          addWatermark();
           y = MARGIN_TOP;
         }
 
@@ -147,6 +165,7 @@ export async function generateSelectablePDF(
       // Check page break
       if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
         doc.addPage();
+        addWatermark();
         y = MARGIN_TOP;
       }
 
@@ -221,7 +240,7 @@ export async function generateSelectablePDF(
 
       // Regular paragraph with first-line indent
       const indent = 10; // First line indent in mm
-      y = addWrappedTextWithIndent(doc, trimmed, MARGIN_LEFT, y, CONTENT_WIDTH, 11, indent, fontsAdded);
+      y = addWrappedTextWithIndent(doc, trimmed, MARGIN_LEFT, y, CONTENT_WIDTH, 11, indent, fontsAdded, addWatermark);
       y += PARAGRAPH_SPACING;
     }
   }
@@ -240,7 +259,8 @@ function addWrappedTextWithIndent(
   maxWidth: number,
   fontSize: number,
   indent: number,
-  fontsAdded: boolean
+  fontsAdded: boolean,
+  addWatermark: () => void
 ): number {
   doc.setFontSize(fontSize);
   if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
@@ -264,6 +284,7 @@ function addWrappedTextWithIndent(
       // Output current line
       if (currentY > PAGE_HEIGHT - MARGIN_BOTTOM) {
         doc.addPage();
+        addWatermark();
         currentY = MARGIN_TOP;
       }
 
@@ -281,6 +302,7 @@ function addWrappedTextWithIndent(
   if (currentLine) {
     if (currentY > PAGE_HEIGHT - MARGIN_BOTTOM) {
       doc.addPage();
+      addWatermark();
       currentY = MARGIN_TOP;
     }
     const lineX = isFirstLine ? x + indent : x;
