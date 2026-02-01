@@ -59,24 +59,23 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       doc.setFont('CyrillicFont', 'normal');
     }
 
-    // A4 dimensions - matching screen layout exactly
+    // A4 dimensions
     const pageWidth = 210;
     const pageHeight = 297;
     const marginLeft = 20;
     const marginRight = 20;
-    const marginTop = 25;
+    const marginTop = 20;
     const marginBottom = 20;
     const contentWidth = pageWidth - marginLeft - marginRight;
 
     let y = marginTop;
-    const lineHeight = 5.5;
-    const fontSize = 11;
+    const lineHeight = 6;
+    const fontSize = 12;
     const headerFontSize = 10;
-    const titleFontSize = 13;
+    const titleFontSize = 14;
 
     const lines = documentText.split('\n');
     let inHeader = true;
-    let headerLines: string[] = [];
 
     const addNewPageIfNeeded = (requiredSpace: number) => {
       if (y + requiredSpace > pageHeight - marginBottom) {
@@ -92,84 +91,38 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       return doc.splitTextToSize(text, maxWidth);
     };
 
-    // First pass: collect header lines
     for (const line of lines) {
-      if (line.startsWith('                                                                     ')) {
-        headerLines.push(line.trim());
-      } else if (line.trim() !== '') {
-        break;
+      if (line.trim() === '') {
+        y += lineHeight * 0.5;
+        continue;
       }
-    }
 
-    // Render header block (right-aligned, matching screen exactly)
-    if (headerLines.length > 0) {
-      for (const headerLine of headerLines) {
+      // Header lines (right-aligned, at the top)
+      if (inHeader && line.startsWith('                                                                     ')) {
+        const content = line.trim();
         doc.setFontSize(headerFontSize);
-        
-        // Match screen styling: italic for Нотариусу/Лицензия/ИИН/Эл.почта, bold for "от:"
-        if (headerLine.includes('Нотариусу') || headerLine.includes('Лицензия') || 
-            headerLine.includes('ИИН') || headerLine.includes('Эл. почта')) {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        } else if (headerLine.includes('от:')) {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
-        } else {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+        if (fontsAdded) {
+          if (content.includes('от:')) {
+            doc.setFont('CyrillicFont', 'bold');
+          } else {
+            doc.setFont('CyrillicFont', 'normal');
+          }
         }
         
-        const textWidth = doc.getTextWidth(headerLine);
-        doc.text(headerLine, pageWidth - marginRight - textWidth, y);
-        y += lineHeight * 0.9;
-      }
-      y += lineHeight * 1.5; // Space after header block
-    }
-
-    // Process remaining lines
-    let headerProcessed = false;
-    for (const line of lines) {
-      // Skip header lines (already processed)
-      if (!headerProcessed && line.startsWith('                                                                     ')) {
-        continue;
-      }
-      if (!headerProcessed && line.trim() === '') {
-        continue;
-      }
-      headerProcessed = true;
-
-      if (line.trim() === '') {
-        y += lineHeight * 0.4;
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, pageWidth - marginRight - textWidth, y);
+        y += lineHeight * 0.8;
         continue;
       }
 
-      // Title "ВОЗРАЖЕНИЕ" - centered, bold
+      // Title "ВОЗРАЖЕНИЕ"
       if (line.includes('ВОЗРАЖЕНИЕ') && !line.includes('на исполнительную')) {
+        inHeader = false;
+        y += lineHeight;
         addNewPageIfNeeded(lineHeight * 2);
         
         doc.setFontSize(titleFontSize);
         if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
-        
-        const content = line.trim();
-        const textWidth = doc.getTextWidth(content);
-        doc.text(content, (pageWidth - textWidth) / 2, y);
-        y += lineHeight * 1.2;
-        continue;
-      }
-
-      // Subtitle "на исполнительную надпись нотариуса" - centered, italic style
-      if (line.includes('на исполнительную надпись нотариуса')) {
-        doc.setFontSize(fontSize - 1);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        
-        const content = line.trim();
-        const textWidth = doc.getTextWidth(content);
-        doc.text(content, (pageWidth - textWidth) / 2, y);
-        y += lineHeight * 0.9;
-        continue;
-      }
-
-      // Registry number line "№ XXXX" - centered
-      if (line.match(/^\s*№\s/) || line.trim().startsWith('№')) {
-        doc.setFontSize(fontSize - 1);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
         
         const content = line.trim();
         const textWidth = doc.getTextWidth(content);
@@ -178,25 +131,21 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         continue;
       }
 
-      // "На основании выше сказанного" - with extra top margin
-      if (line.includes('На основании выше сказанного')) {
-        y += lineHeight * 0.8;
-        addNewPageIfNeeded(lineHeight * 2);
-        
-        doc.setFontSize(fontSize);
+      // Subtitle
+      if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
+        doc.setFontSize(fontSize - 1);
         if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
         
-        const wrapped = wrapText(line.trim(), contentWidth, fontSize);
-        for (const wLine of wrapped) {
-          addNewPageIfNeeded(lineHeight);
-          doc.text(wLine, marginLeft, y);
-          y += lineHeight;
-        }
+        const content = line.trim();
+        const textWidth = doc.getTextWidth(content);
+        doc.text(content, (pageWidth - textWidth) / 2, y);
+        y += lineHeight;
         continue;
       }
 
-      // "ПРОШУ ВАС" section - centered, bold
+      // "ПРОШУ ВАС" section
       if (line.includes('ПРОШУ ВАС')) {
+        y += lineHeight;
         addNewPageIfNeeded(lineHeight * 2);
         
         doc.setFontSize(titleFontSize);
@@ -205,14 +154,14 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         const content = line.trim();
         const textWidth = doc.getTextWidth(content);
         doc.text(content, (pageWidth - textWidth) / 2, y);
-        y += lineHeight * 1.3;
+        y += lineHeight * 1.5;
         continue;
       }
 
       // Signature line
       if (line.includes('Подпись:')) {
-        y += lineHeight * 0.5;
         addNewPageIfNeeded(lineHeight * 3);
+        y += lineHeight;
         
         doc.setFontSize(fontSize);
         if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
@@ -221,12 +170,12 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         // Add signature image if available
         if (signatureDataUrl) {
           try {
-            doc.addImage(signatureDataUrl, 'PNG', marginLeft + 22, y - 7, 38, 11);
+            doc.addImage(signatureDataUrl, 'PNG', marginLeft + 20, y - 8, 40, 12);
           } catch (e) {
             console.warn('Could not add signature image:', e);
           }
         }
-        y += lineHeight * 1.2;
+        y += lineHeight * 1.5;
         continue;
       }
 
@@ -240,7 +189,8 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         continue;
       }
 
-      // Regular paragraph text - justified left
+      // Regular paragraph text
+      inHeader = false;
       doc.setFontSize(fontSize);
       if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
       
