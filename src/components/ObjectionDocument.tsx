@@ -391,9 +391,16 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
             <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
               <div 
                 ref={documentRef}
-                className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12" 
+                className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12 relative" 
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
+                {/* Watermark logo */}
+                <img 
+                  src="/watermark-logo.png" 
+                  alt="" 
+                  className="absolute top-4 right-4 w-16 h-16 opacity-15 pointer-events-none select-none"
+                  aria-hidden="true"
+                />
                 {renderFormattedDocument()}
               </div>
             </div>
