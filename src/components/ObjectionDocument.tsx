@@ -398,7 +398,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
                 <img 
                   src="/watermark-logo.png" 
                   alt="" 
-                  className="absolute top-4 right-4 w-16 h-16 opacity-15 pointer-events-none select-none"
+                  className="absolute top-4 left-4 w-16 h-16 opacity-15 pointer-events-none select-none"
                   aria-hidden="true"
                 />
                 {renderFormattedDocument()}
