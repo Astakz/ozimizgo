@@ -66,20 +66,19 @@ export async function generateSelectablePDF(
   addWatermark();
 
   const lines = documentText.split('\n');
-  let y = MARGIN_TOP + 25; // Start below watermark
+  let y = MARGIN_TOP + 20; // Start below watermark (matching UI top-4 = 16px ≈ 4mm + logo 16mm)
   let inHeader = true;
   const headerLines: string[] = [];
 
-  // Match UI styling exactly
-  const FONT_SIZE_SM = 10; // text-sm equivalent
-  const FONT_SIZE_BASE = 11;
-  const FONT_SIZE_LG = 13; // text-lg equivalent  
-  const FONT_SIZE_XL = 16; // text-xl equivalent
-  const LINE_HEIGHT = 5;
-  const LINE_HEIGHT_RELAXED = 6;
-  const PARAGRAPH_SPACING = 4;
+  // Match UI styling exactly - Times New Roman equivalents
+  const FONT_SIZE_SM = 10;    // text-sm (0.875rem = 14px) → 10pt for PDF
+  const FONT_SIZE_LG = 13;    // text-lg (1.125rem = 18px) → 13pt for PDF
+  const FONT_SIZE_XL = 16;    // text-xl (1.25rem = 20px) → 16pt for PDF
+  const LINE_HEIGHT_RELAXED = 5;  // leading-relaxed
+  const PARAGRAPH_SPACING_SM = 2; // my-3 equivalent
+  const PARAGRAPH_SPACING_LG = 6; // mb-6/mt-8 equivalent
 
-  // Helper to add text with word wrap
+  // Helper to add wrapped text
   const addWrappedText = (
     text: string,
     x: number,
@@ -87,7 +86,7 @@ export async function generateSelectablePDF(
     maxWidth: number,
     fontSize: number,
     fontStyle: 'normal' | 'bold' | 'italic',
-    align: 'left' | 'center' | 'right' | 'justify' = 'left'
+    align: 'left' | 'center' | 'right' = 'left'
   ): number => {
     doc.setFontSize(fontSize);
     if (fontsAdded) {
@@ -98,10 +97,9 @@ export async function generateSelectablePDF(
     let currentY = startY;
 
     for (const line of splitText) {
-      // Check page break
       if (currentY > PAGE_HEIGHT - MARGIN_BOTTOM) {
         doc.addPage();
-        addWatermark(); // Add watermark to new page
+        addWatermark();
         currentY = MARGIN_TOP;
       }
 
@@ -119,144 +117,148 @@ export async function generateSelectablePDF(
     return currentY;
   };
 
-  // Process header (right-aligned block) - matches UI text-right text-sm
+  // Process document line by line - matching renderFormattedDocument() exactly
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (line.trim() === '' && inHeader && headerLines.length > 0) {
-      // Render header block (right-aligned) - matching UI exactly
-      doc.setFontSize(FONT_SIZE_SM);
-      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+    // Empty line handling
+    if (line.trim() === '') {
+      if (inHeader && headerLines.length > 0) {
+        // Render header block (text-right mb-8)
+        doc.setFontSize(FONT_SIZE_SM);
+        
+        for (const hl of headerLines) {
+          const content = hl.trim();
+          if (!content) continue;
 
-      for (const hl of headerLines) {
-        const content = hl.trim();
-        if (!content) continue;
+          if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
+            doc.addPage();
+            addWatermark();
+            y = MARGIN_TOP;
+          }
 
-        // Check page break
-        if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
-          doc.addPage();
-          addWatermark();
-          y = MARGIN_TOP;
+          // Match UI: italic for Нотариусу/Лицензия/ИИН/Эл. почта, bold for от:
+          if (content.includes('Нотариусу') || content.includes('Лицензия') || content.includes('ИИН') || content.includes('Эл. почта')) {
+            if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic style
+          } else if (content.includes('от:')) {
+            if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
+          } else {
+            if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+          }
+
+          doc.text(content, PAGE_WIDTH - MARGIN_RIGHT, y, { align: 'right' });
+          y += LINE_HEIGHT_RELAXED;
         }
 
-        // Match UI styling: italic for certain lines, bold for "от:"
-        if (content.includes('Нотариусу') || content.includes('Лицензия') || content.includes('ИИН') || content.includes('Эл. почта')) {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic not supported, use normal
-        } else if (content.includes('от:')) {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
-        } else {
-          if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        }
-
-        doc.text(content, PAGE_WIDTH - MARGIN_RIGHT, y, { align: 'right' });
-        y += LINE_HEIGHT;
+        y += PARAGRAPH_SPACING_LG; // mb-8 equivalent
+        headerLines.length = 0;
+        inHeader = false;
       }
-
-      y += PARAGRAPH_SPACING * 2;
-      inHeader = false;
       continue;
     }
 
+    // Header lines (right-aligned block)
     if (inHeader && line.startsWith('                                                                     ')) {
       headerLines.push(line);
       continue;
     }
 
-    if (inHeader && line.trim() !== '') {
-      // Not a header line, process as content
+    // "ВОЗРАЖЕНИЕ" title (text-center font-bold text-xl mt-8 mb-2)
+    if (line.includes('ВОЗРАЖЕНИЕ') && !line.includes('на исполнительную')) {
       inHeader = false;
+      y += PARAGRAPH_SPACING_LG; // mt-8
+      doc.setFontSize(FONT_SIZE_XL);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
+      doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
+      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM; // mb-2
+      continue;
     }
 
-    if (!inHeader) {
-      const trimmed = line.trim();
+    // "ПРОШУ ВАС" section header (text-center font-bold text-lg mt-8 mb-4)
+    if (line.includes('ПРОШУ ВАС')) {
+      y += PARAGRAPH_SPACING_LG; // mt-8
+      doc.setFontSize(FONT_SIZE_LG);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
+      doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
+      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM * 2; // mb-4
+      continue;
+    }
 
-      // Skip empty lines but add spacing
-      if (trimmed === '') {
-        y += PARAGRAPH_SPACING;
-        continue;
-      }
+    // Subtitle "на исполнительную надпись нотариуса" (text-center italic text-sm mb-1)
+    if (line.includes('на исполнительную надпись нотариуса')) {
+      doc.setFontSize(FONT_SIZE_SM);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
+      y += LINE_HEIGHT_RELAXED; // mb-1
+      continue;
+    }
 
-      // Check page break
-      if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
-        doc.addPage();
-        addWatermark();
-        y = MARGIN_TOP;
-      }
+    // Registry number line (text-center italic text-sm mb-6)
+    if (line.match(/^\s+№\s/)) {
+      doc.setFontSize(FONT_SIZE_SM);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
+      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_LG; // mb-6
+      continue;
+    }
 
-      // Title: ВОЗРАЖЕНИЕ - matches UI text-xl font-bold text-center
-      if (trimmed.includes('ВОЗРАЖЕНИЕ') && !trimmed.includes('на исполнительную')) {
-        y += PARAGRAPH_SPACING * 2;
-        y = addWrappedText(trimmed, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_XL, 'bold', 'center');
-        y += PARAGRAPH_SPACING / 2;
-        continue;
-      }
+    // "На основании выше сказанного" (text-sm leading-relaxed mt-6 mb-2)
+    if (line.includes('На основании выше сказанного')) {
+      y += PARAGRAPH_SPACING_LG; // mt-6
+      doc.setFontSize(FONT_SIZE_SM);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      doc.text(line, MARGIN_LEFT, y);
+      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM; // mb-2
+      continue;
+    }
 
-      // Subtitle: на исполнительную надпись нотариуса - matches UI text-sm italic text-center
-      if (trimmed.includes('на исполнительную надпись нотариуса')) {
-        doc.setFontSize(FONT_SIZE_SM);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        doc.text(trimmed, PAGE_WIDTH / 2, y, { align: 'center' });
-        y += LINE_HEIGHT;
-        continue;
-      }
-
-      // Registry number line (starts with №) - matches UI text-sm italic text-center mb-6
-      if (trimmed.match(/^№\s/)) {
-        doc.setFontSize(FONT_SIZE_SM);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        doc.text(trimmed, PAGE_WIDTH / 2, y, { align: 'center' });
-        y += LINE_HEIGHT + PARAGRAPH_SPACING * 3; // mb-6 equivalent
-        continue;
-      }
-
-      // Section header: ПРОШУ ВАС - matches UI text-lg font-bold text-center
-      if (trimmed.includes('ПРОШУ ВАС')) {
-        y += PARAGRAPH_SPACING * 2;
-        y = addWrappedText(trimmed, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_LG, 'bold', 'center');
-        y += PARAGRAPH_SPACING;
-        continue;
-      }
-
-      // Signature line - matches UI text-sm
-      if (trimmed.includes('Подпись:')) {
-        y += PARAGRAPH_SPACING;
-        doc.setFontSize(FONT_SIZE_SM);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        
-        doc.text('Подпись:', MARGIN_LEFT, y);
-        
-        if (signatureDataUrl) {
-          try {
-            // Add signature image - matching UI h-12 (48px ~ 12mm)
-            doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT + 22, y - 8, 45, 12);
-          } catch (e) {
-            console.warn('Failed to add signature image:', e);
-            // Draw line placeholder
-            doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 70, y);
-          }
-        } else {
-          // Draw line placeholder - matching UI w-48
+    // Signature line (mt-2 text-sm)
+    if (line.includes('Подпись:')) {
+      y += PARAGRAPH_SPACING_SM; // mt-2
+      doc.setFontSize(FONT_SIZE_SM);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      
+      doc.text('Подпись:', MARGIN_LEFT, y);
+      
+      if (signatureDataUrl) {
+        try {
+          // Signature image matching UI h-12 (48px ≈ 12mm)
+          doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT + 22, y - 8, 45, 12);
+        } catch (e) {
+          console.warn('Failed to add signature image:', e);
           doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 70, y);
         }
-        
-        y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING;
-        continue;
+      } else {
+        // Placeholder line (w-48 ≈ 192px ≈ 50mm)
+        doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 70, y);
       }
-
-      // Date line - matches UI text-sm
-      if (trimmed.includes('«____»')) {
-        doc.setFontSize(FONT_SIZE_SM);
-        if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-        doc.text(trimmed, MARGIN_LEFT, y);
-        y += LINE_HEIGHT_RELAXED;
-        continue;
-      }
-
-      // Regular paragraph with first-line indent - matches UI text-sm text-justify my-3
-      const indent = 10; // First line indent in mm
-      y = addWrappedTextWithIndent(doc, trimmed, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_SM, indent, fontsAdded, addWatermark);
-      y += PARAGRAPH_SPACING;
+      
+      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM;
+      continue;
     }
+
+    // Date line (mt-4 text-sm)
+    if (line.includes('«____»')) {
+      y += PARAGRAPH_SPACING_SM * 2; // mt-4
+      doc.setFontSize(FONT_SIZE_SM);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      doc.text(line, MARGIN_LEFT, y);
+      y += LINE_HEIGHT_RELAXED;
+      continue;
+    }
+
+    // Regular paragraph (text-sm leading-relaxed text-justify my-3)
+    inHeader = false;
+    
+    if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
+      doc.addPage();
+      addWatermark();
+      y = MARGIN_TOP;
+    }
+
+    y += PARAGRAPH_SPACING_SM; // my-3 top margin
+    y = addWrappedTextWithIndent(doc, line, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_SM, 10, fontsAdded, addWatermark);
+    y += PARAGRAPH_SPACING_SM; // my-3 bottom margin
   }
 
   return doc;
