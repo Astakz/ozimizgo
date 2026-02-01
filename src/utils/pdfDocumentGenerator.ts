@@ -44,11 +44,19 @@ export async function generateSelectablePDF(
     doc.setFont('CyrillicFont', 'normal');
   }
 
-  // Add watermark logo to each page
+  // Add watermark logo to each page with transparency
   const addWatermark = () => {
     try {
-      // Position: top-left corner, small size
+      // Save current graphics state
+      const gState = doc.GState({ opacity: 0.15 });
+      doc.saveGraphicsState();
+      doc.setGState(gState);
+      
+      // Position: top-left corner, small size (20x20mm)
       doc.addImage(watermarkLogo, 'PNG', MARGIN_LEFT, MARGIN_TOP, 20, 20);
+      
+      // Restore graphics state
+      doc.restoreGraphicsState();
     } catch (e) {
       console.warn('Failed to add watermark:', e);
     }
