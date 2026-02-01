@@ -44,7 +44,7 @@ export async function generateSelectablePDF(
     doc.setFont('CyrillicFont', 'normal');
   }
 
-  // Add watermark logo to each page with transparency (bottom-right corner)
+  // Add watermark logo to each page with transparency
   const addWatermark = () => {
     try {
       // Save current graphics state
@@ -52,16 +52,8 @@ export async function generateSelectablePDF(
       doc.saveGraphicsState();
       doc.setGState(gState);
       
-      // Position: bottom-right corner, small size (20x20mm)
-      const watermarkSize = 20;
-      doc.addImage(
-        watermarkLogo, 
-        'PNG', 
-        PAGE_WIDTH - MARGIN_RIGHT - watermarkSize, 
-        PAGE_HEIGHT - MARGIN_BOTTOM - watermarkSize, 
-        watermarkSize, 
-        watermarkSize
-      );
+      // Position: top-left corner, small size (20x20mm)
+      doc.addImage(watermarkLogo, 'PNG', MARGIN_LEFT, MARGIN_TOP, 20, 20);
       
       // Restore graphics state
       doc.restoreGraphicsState();
