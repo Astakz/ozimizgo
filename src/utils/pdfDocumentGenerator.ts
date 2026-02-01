@@ -66,65 +66,37 @@ export async function generateSelectablePDF(
   addWatermark();
 
   const lines = documentText.split('\n');
-  let y = MARGIN_TOP + 20; // Start below watermark (matching UI top-4 = 16px ≈ 4mm + logo 16mm)
+  let y = MARGIN_TOP + 22; // Start below watermark (UI: top-4 = 16px ≈ 4mm, logo w-16 h-16 = 16mm)
   let inHeader = true;
   const headerLines: string[] = [];
 
-  // Match UI styling exactly - Times New Roman equivalents
-  const FONT_SIZE_SM = 10;    // text-sm (0.875rem = 14px) → 10pt for PDF
-  const FONT_SIZE_LG = 13;    // text-lg (1.125rem = 18px) → 13pt for PDF
-  const FONT_SIZE_XL = 16;    // text-xl (1.25rem = 20px) → 16pt for PDF
-  const LINE_HEIGHT_RELAXED = 5;  // leading-relaxed
-  const PARAGRAPH_SPACING_SM = 2; // my-3 equivalent
-  const PARAGRAPH_SPACING_LG = 6; // mb-6/mt-8 equivalent
+  // Match UI styling EXACTLY - Times New Roman equivalents
+  // UI uses: text-sm = 0.875rem = 14px, text-lg = 1.125rem = 18px, text-xl = 1.25rem = 20px
+  // PDF conversion: px * 0.75 = pt (approx), but we adjust for visual match
+  const FONT_SIZE_SM = 11;    // text-sm → 11pt for better readability
+  const FONT_SIZE_LG = 14;    // text-lg → 14pt
+  const FONT_SIZE_XL = 17;    // text-xl → 17pt
+  const LINE_HEIGHT = 5.5;    // leading-relaxed equivalent
+  const LINE_HEIGHT_HEADER = 5; // Slightly tighter for header
+  const SPACING_MB_1 = 1.5;   // mb-1
+  const SPACING_MB_2 = 3;     // mb-2
+  const SPACING_MB_4 = 6;     // mb-4
+  const SPACING_MB_6 = 9;     // mb-6
+  const SPACING_MB_8 = 12;    // mb-8
+  const SPACING_MT_2 = 3;     // mt-2
+  const SPACING_MT_4 = 6;     // mt-4
+  const SPACING_MT_6 = 9;     // mt-6
+  const SPACING_MT_8 = 12;    // mt-8
+  const SPACING_MY_3 = 4.5;   // my-3
 
-  // Helper to add wrapped text
-  const addWrappedText = (
-    text: string,
-    x: number,
-    startY: number,
-    maxWidth: number,
-    fontSize: number,
-    fontStyle: 'normal' | 'bold' | 'italic',
-    align: 'left' | 'center' | 'right' = 'left'
-  ): number => {
-    doc.setFontSize(fontSize);
-    if (fontsAdded) {
-      doc.setFont('CyrillicFont', fontStyle === 'italic' ? 'normal' : fontStyle);
-    }
-
-    const splitText = doc.splitTextToSize(text, maxWidth);
-    let currentY = startY;
-
-    for (const line of splitText) {
-      if (currentY > PAGE_HEIGHT - MARGIN_BOTTOM) {
-        doc.addPage();
-        addWatermark();
-        currentY = MARGIN_TOP;
-      }
-
-      let textX = x;
-      if (align === 'center') {
-        textX = PAGE_WIDTH / 2;
-      } else if (align === 'right') {
-        textX = PAGE_WIDTH - MARGIN_RIGHT;
-      }
-
-      doc.text(line, textX, currentY, { align });
-      currentY += LINE_HEIGHT_RELAXED;
-    }
-
-    return currentY;
-  };
-
-  // Process document line by line - matching renderFormattedDocument() exactly
+  // Process document line by line - matching renderFormattedDocument() EXACTLY
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
     // Empty line handling
     if (line.trim() === '') {
       if (inHeader && headerLines.length > 0) {
-        // Render header block (text-right mb-8)
+        // Render header block: className="text-right mb-8"
         doc.setFontSize(FONT_SIZE_SM);
         
         for (const hl of headerLines) {
@@ -137,9 +109,10 @@ export async function generateSelectablePDF(
             y = MARGIN_TOP;
           }
 
-          // Match UI: italic for Нотариусу/Лицензия/ИИН/Эл. почта, bold for от:
+          // UI: italic for Нотариусу/Лицензия/ИИН/Эл. почта, bold for от:
+          // className="text-sm leading-relaxed" + conditional italic/bold
           if (content.includes('Нотариусу') || content.includes('Лицензия') || content.includes('ИИН') || content.includes('Эл. почта')) {
-            if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic style
+            if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic in UI
           } else if (content.includes('от:')) {
             if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
           } else {
@@ -147,74 +120,74 @@ export async function generateSelectablePDF(
           }
 
           doc.text(content, PAGE_WIDTH - MARGIN_RIGHT, y, { align: 'right' });
-          y += LINE_HEIGHT_RELAXED;
+          y += LINE_HEIGHT_HEADER;
         }
 
-        y += PARAGRAPH_SPACING_LG; // mb-8 equivalent
+        y += SPACING_MB_8; // mb-8
         headerLines.length = 0;
         inHeader = false;
       }
       continue;
     }
 
-    // Header lines (right-aligned block)
+    // Header lines (right-aligned block): starts with lots of spaces
     if (inHeader && line.startsWith('                                                                     ')) {
       headerLines.push(line);
       continue;
     }
 
-    // "ВОЗРАЖЕНИЕ" title (text-center font-bold text-xl mt-8 mb-2)
+    // "ВОЗРАЖЕНИЕ" title: className="text-center font-bold text-xl mt-8 mb-2"
     if (line.includes('ВОЗРАЖЕНИЕ') && !line.includes('на исполнительную')) {
       inHeader = false;
-      y += PARAGRAPH_SPACING_LG; // mt-8
+      y += SPACING_MT_8; // mt-8
       doc.setFontSize(FONT_SIZE_XL);
       if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
       doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
-      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM; // mb-2
+      y += LINE_HEIGHT + SPACING_MB_2; // + mb-2
       continue;
     }
 
-    // "ПРОШУ ВАС" section header (text-center font-bold text-lg mt-8 mb-4)
+    // "ПРОШУ ВАС" section header: className="text-center font-bold text-lg mt-8 mb-4"
     if (line.includes('ПРОШУ ВАС')) {
-      y += PARAGRAPH_SPACING_LG; // mt-8
+      y += SPACING_MT_8; // mt-8
       doc.setFontSize(FONT_SIZE_LG);
       if (fontsAdded) doc.setFont('CyrillicFont', 'bold');
       doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
-      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM * 2; // mb-4
+      y += LINE_HEIGHT + SPACING_MB_4; // + mb-4
       continue;
     }
 
-    // Subtitle "на исполнительную надпись нотариуса" (text-center italic text-sm mb-1)
+    // Subtitle "на исполнительную надпись нотариуса": className="text-center italic text-sm mb-1"
     if (line.includes('на исполнительную надпись нотариуса')) {
       doc.setFontSize(FONT_SIZE_SM);
-      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic
       doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
-      y += LINE_HEIGHT_RELAXED; // mb-1
+      y += LINE_HEIGHT + SPACING_MB_1; // + mb-1
       continue;
     }
 
-    // Registry number line (text-center italic text-sm mb-6)
+    // Registry number line "№ ...": className="text-center italic text-sm mb-6"
     if (line.match(/^\s+№\s/)) {
       doc.setFontSize(FONT_SIZE_SM);
-      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal'); // italic
       doc.text(line.trim(), PAGE_WIDTH / 2, y, { align: 'center' });
-      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_LG; // mb-6
+      y += LINE_HEIGHT + SPACING_MB_6; // + mb-6
       continue;
     }
 
-    // "На основании выше сказанного" (text-sm leading-relaxed mt-6 mb-2)
+    // "На основании выше сказанного": className="text-sm leading-relaxed mt-6 mb-2"
     if (line.includes('На основании выше сказанного')) {
-      y += PARAGRAPH_SPACING_LG; // mt-6
+      y += SPACING_MT_6; // mt-6
       doc.setFontSize(FONT_SIZE_SM);
       if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
       doc.text(line, MARGIN_LEFT, y);
-      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM; // mb-2
+      y += LINE_HEIGHT + SPACING_MB_2; // + mb-2
       continue;
     }
 
-    // Signature line (mt-2 text-sm)
+    // Signature line: className="mt-2 text-sm flex items-end gap-2"
     if (line.includes('Подпись:')) {
-      y += PARAGRAPH_SPACING_SM; // mt-2
+      y += SPACING_MT_2; // mt-2
       doc.setFontSize(FONT_SIZE_SM);
       if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
       
@@ -222,32 +195,33 @@ export async function generateSelectablePDF(
       
       if (signatureDataUrl) {
         try {
-          // Signature image matching UI h-12 (48px ≈ 12mm)
-          doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT + 22, y - 8, 45, 12);
+          // Signature: UI h-12 (48px ≈ 12.7mm), width auto ~45mm
+          doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT + 22, y - 9, 45, 12);
         } catch (e) {
           console.warn('Failed to add signature image:', e);
-          doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 70, y);
+          // Fallback: UI w-48 (192px ≈ 51mm)
+          doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 73, y);
         }
       } else {
-        // Placeholder line (w-48 ≈ 192px ≈ 50mm)
-        doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 70, y);
+        // Placeholder line: className="inline-block w-48 border-b"
+        doc.line(MARGIN_LEFT + 22, y, MARGIN_LEFT + 73, y);
       }
       
-      y += LINE_HEIGHT_RELAXED + PARAGRAPH_SPACING_SM;
+      y += LINE_HEIGHT + SPACING_MT_2;
       continue;
     }
 
-    // Date line (mt-4 text-sm)
+    // Date line: className="mt-4 text-sm"
     if (line.includes('«____»')) {
-      y += PARAGRAPH_SPACING_SM * 2; // mt-4
+      y += SPACING_MT_4; // mt-4
       doc.setFontSize(FONT_SIZE_SM);
       if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
       doc.text(line, MARGIN_LEFT, y);
-      y += LINE_HEIGHT_RELAXED;
+      y += LINE_HEIGHT;
       continue;
     }
 
-    // Regular paragraph (text-sm leading-relaxed text-justify my-3)
+    // Regular paragraph: className="text-sm leading-relaxed text-justify my-3"
     inHeader = false;
     
     if (y > PAGE_HEIGHT - MARGIN_BOTTOM) {
@@ -256,9 +230,9 @@ export async function generateSelectablePDF(
       y = MARGIN_TOP;
     }
 
-    y += PARAGRAPH_SPACING_SM; // my-3 top margin
-    y = addWrappedTextWithIndent(doc, line, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_SM, 10, fontsAdded, addWatermark);
-    y += PARAGRAPH_SPACING_SM; // my-3 bottom margin
+    y += SPACING_MY_3; // my-3 top
+    y = addWrappedTextWithIndent(doc, line, MARGIN_LEFT, y, CONTENT_WIDTH, FONT_SIZE_SM, 10, fontsAdded, addWatermark, LINE_HEIGHT);
+    y += SPACING_MY_3; // my-3 bottom
   }
 
   return doc;
@@ -276,14 +250,13 @@ function addWrappedTextWithIndent(
   fontSize: number,
   indent: number,
   fontsAdded: boolean,
-  addWatermark: () => void
+  addWatermark: () => void,
+  lineHeight: number = 5.5
 ): number {
   doc.setFontSize(fontSize);
   if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
 
-  const LINE_HEIGHT = 6;
-
-  // First line has indent
+  // First line has indent (text-indent equivalent)
   const firstLineWidth = maxWidth - indent;
   const words = text.split(' ');
   let currentLine = '';
@@ -306,7 +279,7 @@ function addWrappedTextWithIndent(
 
       const lineX = isFirstLine ? x + indent : x;
       doc.text(currentLine, lineX, currentY);
-      currentY += LINE_HEIGHT;
+      currentY += lineHeight;
       currentLine = word;
       isFirstLine = false;
     } else {
@@ -323,7 +296,7 @@ function addWrappedTextWithIndent(
     }
     const lineX = isFirstLine ? x + indent : x;
     doc.text(currentLine, lineX, currentY);
-    currentY += LINE_HEIGHT;
+    currentY += lineHeight;
   }
 
   return currentY;
