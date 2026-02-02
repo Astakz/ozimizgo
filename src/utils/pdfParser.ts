@@ -137,14 +137,38 @@ export function extractNotarialData(text: string): ParsedDocument {
     /взыскател[ьяю][:\s]+([^,]+)/i,
   ], 'Наименование взыскателя');
 
-  // Clean up creditor name - keep full organization type names
+  // Clean up and format creditor name with proper organization type prefix
   let cleanCreditorName = creditorName
     .replace(/\(представитель.*$/i, '')
-    .replace(/Товарищество с ограниченной ответственностью\s*/i, 'ТОО ')
-    .replace(/МФО\s*/i, 'Микрофинансовая организация ')
-    .replace(/АО\s*/i, 'Акционерное общество ')
     .replace(/[«»""]/g, '"')
     .trim();
+  
+  // Extract organization name and format with proper type prefix
+  // Format: "Акционерное общество «Народный Банк»" or "Микрофинансовая организация «PROcredit»"
+  const formatCreditorName = (name: string): string => {
+    // Remove existing prefixes to get clean org name
+    let orgName = name
+      .replace(/^Товарищество с ограниченной ответственностью\s*/i, '')
+      .replace(/^ТОО\s*/i, '')
+      .replace(/^Микрофинансовая организация\s*/i, '')
+      .replace(/^МФО\s*/i, '')
+      .replace(/^Акционерное общество\s*/i, '')
+      .replace(/^АО\s*/i, '')
+      .replace(/^["'\s]+|["'\s]+$/g, '')
+      .trim();
+    
+    // Determine organization type from original name
+    if (/Микрофинансовая организация|МФО/i.test(name)) {
+      return `Микрофинансовая организация «${orgName}»`;
+    } else if (/Акционерное общество|АО/i.test(name) || /Банк/i.test(name)) {
+      return `Акционерное общество «${orgName}»`;
+    } else if (/Товарищество с ограниченной ответственностью|ТОО/i.test(name)) {
+      return `ТОО «${orgName}»`;
+    }
+    return orgName;
+  };
+  
+  cleanCreditorName = formatCreditorName(cleanCreditorName);
 
   // Extract debt amount - format: "задолженность в сумме 109359,72 тенге"
   const debtAmount = findPattern([
