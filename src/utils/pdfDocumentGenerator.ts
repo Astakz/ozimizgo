@@ -180,7 +180,7 @@ export async function generateSelectablePDF(
       continue;
     }
 
-    // Signature line - signature goes BELOW the "Подпись: ____" line
+    // Signature line - signature image goes BEFORE the word "Подпись:"
     if (line.includes('Подпись:')) {
       y += MARGIN_BODY_TEXT;
       
@@ -190,23 +190,20 @@ export async function generateSelectablePDF(
         y = MARGIN_TOP;
       }
       
-      doc.setFontSize(FONT_SIZE_BODY);
-      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
-      
-      // Draw "Подпись: ____________________"
-      doc.text('Подпись: ____________________', MARGIN_LEFT, y);
-      y += LINE_HEIGHT_BODY;
-      
-      // Add signature image BELOW the signature line
+      // Add signature image BEFORE the "Подпись:" text
       if (signatureDataUrl) {
         try {
-          // Signature image placed below the line, centered under "____"
-          doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT + 20, y, 50, 18);
-          y += 20; // Space for signature image
+          doc.addImage(signatureDataUrl, 'PNG', MARGIN_LEFT, y - 12, 50, 18);
         } catch (e) {
           console.warn('Failed to add signature image:', e);
         }
       }
+      
+      // Draw "Подпись: ____________________" after the signature image
+      doc.setFontSize(FONT_SIZE_BODY);
+      if (fontsAdded) doc.setFont('CyrillicFont', 'normal');
+      doc.text('Подпись: ____________________', MARGIN_LEFT, y + 10);
+      y += LINE_HEIGHT_BODY + 10;
       
       y += MARGIN_BODY_TEXT;
       continue;

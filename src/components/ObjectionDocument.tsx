@@ -229,11 +229,11 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
       } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
         html += `<div class="subtitle">${line.trim()}</div>`;
       } else if (line.includes('Подпись:')) {
-        // Signature line with image BELOW
-        html += `<p class="body-text-no-indent">Подпись: ____________________</p>`;
+        // Signature image goes BEFORE the "Подпись:" text
         if (signature) {
           html += `<div class="signature-image"><img src="${signature}" alt="Подпись" style="max-height: 50px;" /></div>`;
         }
+        html += `<p class="body-text-no-indent">Подпись: ____________________</p>`;
       } else {
         inHeader = false;
         html += `<p class="body-text-no-indent">${line}</p>`;
@@ -309,14 +309,15 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
           </p>
         );
       } else if (line.includes('Подпись:')) {
+        // Signature image goes BEFORE the "Подпись:" text
         elements.push(
           <div key={key++} className="mt-2 text-sm">
-            <div>Подпись: ____________________</div>
             {signatureDataUrl && (
-              <div className="mt-1 ml-16">
+              <div className="mb-1 ml-16">
                 <img src={signatureDataUrl} alt="Подпись" className="h-12" />
               </div>
             )}
+            <div>Подпись: ____________________</div>
           </div>
         );
       } else if (line.includes('«____»')) {
