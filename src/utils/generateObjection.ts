@@ -30,7 +30,7 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
     { 
       type: 'body', 
       align: 'left', 
-      content: `${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.`,
+      content: `${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.`,
       bold: true
     },
     { 
