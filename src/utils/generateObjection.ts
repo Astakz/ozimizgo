@@ -16,7 +16,7 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
     // Right-aligned header
     { type: 'header', align: 'right', content: 'Нотариусу', italic: true },
     { type: 'header', align: 'right', content: data.notaryName },
-    { type: 'header', align: 'right', content: `Лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}`, italic: true },
+    { type: 'header', align: 'right', content: `Лицензия №${data.notaryLicense}`, italic: true },
     { type: 'header', align: 'right', content: `от: ${data.debtorName}`, bold: true },
     { type: 'header', align: 'right', content: `ИИН ${data.debtorIIN}`, italic: true },
     { type: 'header', align: 'right', content: `Эл. почта: ${data.debtorEmail || '________________________'}`, italic: true },
