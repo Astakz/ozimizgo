@@ -30,7 +30,7 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
     { 
       type: 'body', 
       align: 'left', 
-      content: `${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.`,
+      content: `${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.`,
       bold: true
     },
     { 
@@ -87,7 +87,7 @@ export function generateObjectionDocument(data: NotarialData): DocumentSection[]
     { 
       type: 'body', 
       align: 'left', 
-      content: `Отменить учиненную Вами исполнительную надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense} о взыскании суммы задолженности с меня в пользу ${creditorDisplay} в сумме ${data.totalAmount} тенге${data.totalAmountWords ? ` (${data.totalAmountWords})` : ''}.`
+      content: `Отменить учиненную Вами исполнительную надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''} о взыскании суммы задолженности с меня в пользу ${creditorDisplay} в сумме ${data.totalAmount} тенге${data.totalAmountWords ? ` (${data.totalAmountWords})` : ''}.`
     },
     { 
       type: 'body', 
@@ -122,7 +122,7 @@ export function generateObjectionDocumentText(data: NotarialData): string {
                                   на исполнительную надпись нотариуса
                                               № ${data.enforcementNumber}
 
-${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.
+${data.enforcementDate} года мной была получена исполнительная надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}. При изучении исполнительной надписи мной было выяснено, что Вами была установлена сумма задолженности в пользу ${creditorDisplay}. Сумма задолженности в размере ${data.debtAmount} тенге${data.debtAmountWords ? ` (${data.debtAmountWords})` : ''}. Кроме того, подлежат взысканию в пользу указанного юридического лица расходы по совершению исполнительной надписи в сумме ${data.notaryExpenses} тенге.
 
 Общая сумма, подлежащая взысканию, составляет ${data.totalAmount} тенге${data.totalAmountWords ? ` (${data.totalAmountWords})` : ''}.
 
@@ -138,7 +138,7 @@ ${data.enforcementDate} года мной была получена исполн
 
                                               ПРОШУ ВАС:
 
-Отменить учиненную Вами исполнительную надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense} о взыскании суммы задолженности с меня в пользу ${creditorDisplay} в сумме ${data.totalAmount} тенге${data.totalAmountWords ? ` (${data.totalAmountWords})` : ''}.
+Отменить учиненную Вами исполнительную надпись №${data.enforcementNumber} от ${data.enforcementDate} государственная лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''} о взыскании суммы задолженности с меня в пользу ${creditorDisplay} в сумме ${data.totalAmount} тенге${data.totalAmountWords ? ` (${data.totalAmountWords})` : ''}.
 
 Постановление об отмене исполнительной надписи направить на эл. почту: ${data.debtorEmail || '________________________'}
 
