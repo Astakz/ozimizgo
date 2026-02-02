@@ -1,6 +1,7 @@
 export interface NotarialData {
   notaryName: string;
   notaryLicense: string;
+  notaryLicenseDate: string; // Дата выдачи лицензии нотариуса
   enforcementNumber: string;
   enforcementDate: string;
   registryNumber: string;
