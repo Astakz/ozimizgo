@@ -120,9 +120,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      const signatureHtml = signatureDataUrl 
-        ? `<div style="margin-top: 20px;"><img src="${signatureDataUrl}" alt="Подпись" style="max-height: 80px;" /></div>`
-        : '';
+      // Signature image is added BELOW the "Подпись: ____" line in formatForPrint
       
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -179,6 +177,10 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
             .signature-section {
               margin-top: 40px;
             }
+            .signature-image {
+              margin-top: 5px;
+              margin-left: 60px;
+            }
             @media print {
               body {
                 padding: 0;
@@ -187,8 +189,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
           </style>
         </head>
         <body>
-          <div class="document-content">${formatForPrint(documentText)}</div>
-          ${signatureHtml}
+          <div class="document-content">${formatForPrint(documentText, signatureDataUrl)}</div>
         </body>
         </html>
       `);
@@ -197,7 +198,7 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
     }
   };
 
-  const formatForPrint = (text: string): string => {
+  const formatForPrint = (text: string, signature: string | null): string => {
     const lines = text.split('\n');
     let html = '';
     let inHeader = true;
@@ -227,6 +228,12 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         html += `<div class="title">${line.trim()}</div>`;
       } else if (line.includes('на исполнительную надпись нотариуса') || line.match(/^\s+№\s/)) {
         html += `<div class="subtitle">${line.trim()}</div>`;
+      } else if (line.includes('Подпись:')) {
+        // Signature line with image BELOW
+        html += `<p class="body-text-no-indent">Подпись: ____________________</p>`;
+        if (signature) {
+          html += `<div class="signature-image"><img src="${signature}" alt="Подпись" style="max-height: 50px;" /></div>`;
+        }
       } else {
         inHeader = false;
         html += `<p class="body-text-no-indent">${line}</p>`;
@@ -303,12 +310,12 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
         );
       } else if (line.includes('Подпись:')) {
         elements.push(
-          <div key={key++} className="mt-2 text-sm flex items-end gap-2">
-            <span>Подпись:</span>
-            {signatureDataUrl ? (
-              <img src={signatureDataUrl} alt="Подпись" className="h-12 inline-block" />
-            ) : (
-              <span className="inline-block w-48 border-b border-gray-400"></span>
+          <div key={key++} className="mt-2 text-sm">
+            <div>Подпись: ____________________</div>
+            {signatureDataUrl && (
+              <div className="mt-1 ml-16">
+                <img src={signatureDataUrl} alt="Подпись" className="h-12" />
+              </div>
             )}
           </div>
         );
