@@ -80,6 +80,7 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
   const allFields: { key: keyof NotarialData; label: string }[] = [
     { key: 'notaryName', label: 'ФИО нотариуса' },
     { key: 'notaryLicense', label: 'Номер лицензии' },
+    { key: 'notaryLicenseDate', label: 'Дата выдачи лицензии' },
     { key: 'enforcementNumber', label: 'Номер исполнительной надписи' },
     { key: 'enforcementDate', label: 'Дата исполнительной надписи' },
     { key: 'registryNumber', label: 'Номер реестра' },
@@ -196,7 +197,7 @@ export function ExtractedDataPreview({ data, errors, onDataChange, onGenerate }:
                   </p>
                   {field.sublabelKey && data[field.sublabelKey] && (
                     <p className="text-sm text-muted-foreground">
-                      {field.sublabelKey === 'notaryLicense' && `Лицензия № ${data[field.sublabelKey]}`}
+                      {field.sublabelKey === 'notaryLicense' && `Лицензия № ${data[field.sublabelKey]}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}`}
                       {field.sublabelKey === 'registryNumber' && `Реестр № ${data[field.sublabelKey]}`}
                       {field.sublabelKey === 'debtorIIN' && `ИИН: ${data[field.sublabelKey]}`}
                       {field.sublabelKey === 'debtAmountWords' && data[field.sublabelKey]}

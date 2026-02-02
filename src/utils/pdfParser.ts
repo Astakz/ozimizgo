@@ -80,6 +80,13 @@ export function extractNotarialData(text: string): ParsedDocument {
     /лицензи[яи]\s+(\d+)/i,
   ], 'Номер лицензии');
 
+  // Extract license date - format: "лицензия №22014333 от 01.08.2022" or "от 1 августа 2022 г."
+  const notaryLicenseDate = findPattern([
+    /лицензи[яи]\s*№?\s*\d+\s+от\s+(\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4})/i,
+    /лицензи[яи]\s*№?\s*\d+\s+от\s+(\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\s+\d{4})/i,
+    /от\s+(\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{4})\s*г?\.?\s*государственн/i,
+  ], 'Дата выдачи лицензии');
+
   // Extract enforcement number from registry line - format: "Зарегистрировано в реестре за №7684"
   const enforcementNumber = findPattern([
     /Зарегистрировано\s+в\s+реестре\s+за\s+№\s*(\d+)/i,
@@ -181,6 +188,7 @@ export function extractNotarialData(text: string): ParsedDocument {
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).join(' '),
     notaryLicense,
+    notaryLicenseDate,
     enforcementNumber,
     enforcementDate: formattedDate,
     registryNumber,
