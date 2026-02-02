@@ -341,45 +341,46 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <Card className="shadow-elevated animate-fade-in">
-          <CardHeader className="border-b navy-gradient text-primary-foreground">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <FileText className="h-6 w-6 text-gold" />
+          <CardHeader className="border-b navy-gradient text-primary-foreground p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gold" />
                 Готовое возражение
               </CardTitle>
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 sm:flex gap-2 sm:flex-wrap">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handleCopy}
-                  className="gold-button"
+                  className="gold-button text-xs sm:text-sm"
                 >
-                  {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+                  {copied ? <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
                   {copied ? 'Скопировано' : 'Копировать'}
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handlePreviewPDF}
-                  className="gold-button"
+                  className="gold-button text-xs sm:text-sm"
                   disabled={isGeneratingPDF}
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  Предпросмотр
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  <span className="hidden xs:inline">Предпросмотр</span>
+                  <span className="xs:hidden">Просмотр</span>
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handleDownloadPDF}
-                  className="gold-button"
+                  className="gold-button text-xs sm:text-sm"
                   disabled={isGeneratingPDF}
                 >
                   {isGeneratingPDF ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
                   ) : (
-                    <Download className="h-4 w-4 mr-1" />
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   )}
                   {isGeneratingPDF ? 'Генерация...' : 'Скачать PDF'}
                 </Button>
@@ -387,26 +388,26 @@ export function ObjectionDocument({ documentText }: ObjectionDocumentProps) {
                   variant="secondary"
                   size="sm"
                   onClick={handlePrint}
-                  className="gold-button"
+                  className="gold-button text-xs sm:text-sm"
                 >
-                  <Printer className="h-4 w-4 mr-1" />
+                  <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   Печать
                 </Button>
               </div>
             </div>
           </CardHeader>
-        <CardContent className="p-0">
-            <div className="legal-document p-6 md:p-10 lg:p-12 max-h-[70vh] overflow-y-auto bg-paper">
+          <CardContent className="p-0">
+            <div className="legal-document p-4 sm:p-6 md:p-10 lg:p-12 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto bg-paper">
               <div 
                 ref={documentRef}
-                className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-8 md:p-12 relative" 
+                className="max-w-[800px] mx-auto bg-white shadow-lg border border-gray-200 p-4 sm:p-8 md:p-12 relative" 
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 {/* Watermark logo */}
                 <img 
                   src="/watermark-logo.png" 
                   alt="" 
-                  className="absolute top-4 left-4 w-16 h-16 opacity-15 pointer-events-none select-none"
+                  className="absolute top-2 left-2 sm:top-4 sm:left-4 w-12 h-12 sm:w-16 sm:h-16 opacity-15 pointer-events-none select-none"
                   aria-hidden="true"
                 />
                 {renderFormattedDocument()}

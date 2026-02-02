@@ -60,8 +60,8 @@ const Index = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
+        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
           {/* Upload Section */}
           <section className="animate-fade-in">
             <PDFUploader
@@ -76,7 +76,7 @@ const Index = () => {
           {parsedDocument && currentData && (
             <>
               <div className="flex justify-center">
-                <ArrowDown className="h-8 w-8 text-gold animate-bounce" />
+                <ArrowDown className="h-6 w-6 sm:h-8 sm:w-8 text-gold animate-bounce" />
               </div>
               
               <section>
@@ -93,7 +93,7 @@ const Index = () => {
           {/* Generated Document Section */}
           {objectionText && (
             <>
-              <Separator className="my-8" />
+              <Separator className="my-6 sm:my-8" />
               
               <section>
                 <ObjectionDocument documentText={objectionText} />
@@ -103,22 +103,22 @@ const Index = () => {
 
           {/* Instructions when no document */}
           {!parsedDocument && !isProcessing && (
-            <section className="text-center py-8 animate-fade-in">
-              <h2 className="text-xl font-serif font-semibold text-foreground mb-4">
+            <section className="text-center py-6 sm:py-8 animate-fade-in">
+              <h2 className="text-lg sm:text-xl font-serif font-semibold text-foreground mb-3 sm:mb-4">
                 Как это работает?
               </h2>
-              <div className="grid md:grid-cols-3 gap-6 mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {[
                   { step: '1', title: 'Загрузите PDF', desc: 'Исполнительная надпись нотариуса из Е-Нотариат' },
                   { step: '2', title: 'Проверьте данные', desc: 'Отредактируйте при необходимости' },
                   { step: '3', title: 'Готовый документ', desc: 'Возражение в официальном формате РК' },
                 ].map((item) => (
-                  <div key={item.step} className="p-6 rounded-lg bg-card shadow-card border">
-                    <div className="w-10 h-10 rounded-full bg-gold text-navy-deep font-bold flex items-center justify-center mx-auto mb-3">
+                  <div key={item.step} className="p-4 sm:p-6 rounded-lg bg-card shadow-card border">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gold text-navy-deep font-bold flex items-center justify-center mx-auto mb-2 sm:mb-3 text-sm sm:text-base">
                       {item.step}
                     </div>
-                    <h3 className="font-semibold text-foreground">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{item.desc}</p>
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">{item.title}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">{item.desc}</p>
                   </div>
                 ))}
               </div>
