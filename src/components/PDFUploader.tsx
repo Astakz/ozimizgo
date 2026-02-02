@@ -43,13 +43,13 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
   }, [onFileSelect]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto px-2 sm:px-0">
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          'upload-zone p-8 md:p-12 cursor-pointer relative overflow-hidden',
+          'upload-zone p-6 sm:p-8 md:p-12 cursor-pointer relative overflow-hidden',
           isDragging && 'active',
           isProcessed && !error && 'border-green-500 bg-green-50',
           error && 'border-destructive bg-red-50'
@@ -63,45 +63,47 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
           disabled={isProcessing}
         />
         
-        <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex flex-col items-center gap-3 sm:gap-4 text-center">
           {isProcessing ? (
             <>
-              <Loader2 className="h-16 w-16 text-gold animate-spin" />
+              <Loader2 className="h-12 w-12 sm:h-16 sm:w-16 text-gold animate-spin" />
               <div>
-                <p className="text-lg font-semibold text-foreground">Обработка документа...</p>
-                <p className="text-sm text-muted-foreground mt-1">Извлечение данных из PDF</p>
+                <p className="text-base sm:text-lg font-semibold text-foreground">Обработка документа...</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Извлечение данных из PDF</p>
               </div>
             </>
           ) : isProcessed && !error ? (
             <>
-              <CheckCircle className="h-16 w-16 text-green-600" />
+              <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 text-green-600" />
               <div>
-                <p className="text-lg font-semibold text-green-700">Документ обработан!</p>
-                <p className="text-sm text-green-600 mt-1">{fileName}</p>
+                <p className="text-base sm:text-lg font-semibold text-green-700">Документ обработан!</p>
+                <p className="text-xs sm:text-sm text-green-600 mt-1 break-all">{fileName}</p>
               </div>
             </>
           ) : error ? (
             <>
-              <AlertCircle className="h-16 w-16 text-destructive" />
+              <AlertCircle className="h-12 w-12 sm:h-16 sm:w-16 text-destructive" />
               <div>
-                <p className="text-lg font-semibold text-destructive">Ошибка обработки</p>
-                <p className="text-sm text-destructive/80 mt-1">{error}</p>
+                <p className="text-base sm:text-lg font-semibold text-destructive">Ошибка обработки</p>
+                <p className="text-xs sm:text-sm text-destructive/80 mt-1">{error}</p>
               </div>
             </>
           ) : (
             <>
               <div className="relative">
-                <Upload className="h-16 w-16 text-navy-medium" />
-                <FileText className="h-8 w-8 text-gold absolute -bottom-1 -right-1" />
+                <Upload className="h-12 w-12 sm:h-16 sm:w-16 text-navy-medium" />
+                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gold absolute -bottom-1 -right-1" />
               </div>
               <div>
-                <p className="text-lg font-semibold text-foreground">
+                <p className="text-base sm:text-lg font-semibold text-foreground">
                   Загрузите исполнительную надпись
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Перетащите PDF-файл сюда или нажмите для выбора
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  <span className="hidden sm:inline">Перетащите PDF-файл сюда или </span>
+                  <span className="sm:hidden">Нажмите для </span>
+                  нажмите для выбора
                 </p>
-                <p className="text-xs text-muted-foreground mt-3">
+                <p className="text-xs text-muted-foreground mt-2 sm:mt-3">
                   Поддерживается только PDF формат (Е-Нотариат)
                 </p>
               </div>

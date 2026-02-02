@@ -108,18 +108,18 @@ export function SignaturePad({ onSignatureChange }: SignaturePadProps) {
 
   return (
     <Card className="shadow-sm border-2 border-dashed border-muted-foreground/30">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between text-base">
+      <CardHeader className="pb-2 p-3 sm:p-6 sm:pb-2">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm sm:text-base">
           <span className="flex items-center gap-2 text-muted-foreground">
-            <PenTool className="h-4 w-4" />
-            Для подписания документа поставьте подпись в поле ниже
+            <PenTool className="h-4 w-4 shrink-0" />
+            <span className="text-xs sm:text-sm">Поставьте подпись в поле ниже</span>
           </span>
           {hasSignature && (
             <Button
               variant="ghost"
               size="sm"
               onClick={clearSignature}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto"
             >
               <Eraser className="h-4 w-4 mr-1" />
               Очистить
@@ -127,7 +127,7 @@ export function SignaturePad({ onSignatureChange }: SignaturePadProps) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         <div className="relative w-full">
           <div className="absolute bottom-4 left-0 right-0 border-b border-muted-foreground/50 pointer-events-none" />
           <canvas
@@ -142,13 +142,13 @@ export function SignaturePad({ onSignatureChange }: SignaturePadProps) {
             onTouchEnd={stopDrawing}
           />
           {!hasSignature && (
-            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground/50 text-sm pointer-events-none">
+            <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground/50 text-xs sm:text-sm pointer-events-none whitespace-nowrap">
               Подпись: _________________________
             </p>
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Если допустили ошибку, можно стереть подпись и поставить её заново
+          Если допустили ошибку, можно стереть и поставить заново
         </p>
       </CardContent>
     </Card>

@@ -96,25 +96,26 @@ export function PDFPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold">Предпросмотр документа</DialogTitle>
+      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] sm:h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <DialogTitle className="text-base sm:text-lg font-semibold">Предпросмотр документа</DialogTitle>
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => {
                   if (pdfBlobUrl) window.open(pdfBlobUrl, '_blank', 'noopener,noreferrer');
                 }}
                 variant="secondary"
-                className="gold-button"
+                className="gold-button text-xs sm:text-sm flex-1 sm:flex-initial"
+                size="sm"
                 disabled={!canOpenExternally}
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Открыть
               </Button>
-              <Button onClick={onDownload} className="gold-button" disabled={!pdfBlobUrl}>
-                <Download className="h-4 w-4 mr-2" />
-                Скачать PDF
+              <Button onClick={onDownload} className="gold-button text-xs sm:text-sm flex-1 sm:flex-initial" size="sm" disabled={!pdfBlobUrl}>
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Скачать
               </Button>
             </div>
           </div>
@@ -123,21 +124,21 @@ export function PDFPreviewModal({
         <div className="flex-1 overflow-hidden bg-muted">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Генерация PDF...</span>
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+              <span className="ml-2 sm:ml-3 text-sm sm:text-base text-muted-foreground">Генерация PDF...</span>
             </div>
           ) : !pdfBlobUrl ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm sm:text-base">
               Ошибка загрузки предпросмотра
             </div>
           ) : isRendering ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Загрузка предпросмотра...</span>
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
+              <span className="ml-2 sm:ml-3 text-sm sm:text-base text-muted-foreground">Загрузка...</span>
             </div>
           ) : pageImages.length > 0 ? (
-            <div className="h-full overflow-auto p-4">
-              <div className="mx-auto max-w-[900px] space-y-4">
+            <div className="h-full overflow-auto p-2 sm:p-4">
+              <div className="mx-auto max-w-[900px] space-y-2 sm:space-y-4">
                 {pageImages.map((src, idx) => (
                   <img
                     key={idx}
@@ -150,8 +151,8 @@ export function PDFPreviewModal({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
-              <p className="max-w-[520px]">{renderError ?? 'Не удалось отобразить предпросмотр.'}</p>
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 sm:p-6 text-center">
+              <p className="max-w-[520px] text-sm sm:text-base">{renderError ?? 'Не удалось отобразить предпросмотр.'}</p>
               <div className="mt-4">
                 <Button
                   onClick={() => {
