@@ -137,10 +137,12 @@ export function extractNotarialData(text: string): ParsedDocument {
     /взыскател[ьяю][:\s]+([^,]+)/i,
   ], 'Наименование взыскателя');
 
-  // Clean up creditor name
+  // Clean up creditor name - keep full organization type names
   let cleanCreditorName = creditorName
     .replace(/\(представитель.*$/i, '')
     .replace(/Товарищество с ограниченной ответственностью\s*/i, 'ТОО ')
+    .replace(/МФО\s*/i, 'Микрофинансовая организация ')
+    .replace(/АО\s*/i, 'Акционерное общество ')
     .replace(/[«»""]/g, '"')
     .trim();
 
