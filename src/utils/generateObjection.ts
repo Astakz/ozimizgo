@@ -112,7 +112,7 @@ export function generateObjectionDocumentText(data: NotarialData): string {
 
   return `                                                                     Нотариусу
                                                                      ${data.notaryName}
-                                                                     Лицензия №${data.notaryLicense}${data.notaryLicenseDate ? ` от ${data.notaryLicenseDate}` : ''}
+                                                                     Лицензия №${data.notaryLicense}
                                                                      от: ${data.debtorName}
                                                                      ИИН ${data.debtorIIN}
                                                                      Эл. почта: ${data.debtorEmail || '________________________'}
