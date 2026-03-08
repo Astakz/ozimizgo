@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  hasFullAccess: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   isAdmin: false,
+  hasFullAccess: false,
   signOut: async () => {},
 });
 
@@ -23,15 +25,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasFullAccess, setHasFullAccess] = useState(false);
 
-  const checkAdmin = async (userId: string) => {
-    const { data } = await supabase
+  const checkUserAccess = async (userId: string) => {
+    const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
-    setIsAdmin(!!data);
+    setIsAdmin(!!roleData);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('invite_code')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setHasFullAccess(!!profile?.invite_code && profile.invite_code.trim() !== '');
   };
 
   useEffect(() => {
@@ -40,9 +50,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => checkAdmin(session.user.id), 0);
+          setTimeout(() => checkUserAccess(session.user.id), 0);
         } else {
           setIsAdmin(false);
+          setHasFullAccess(false);
         }
         setLoading(false);
       }
@@ -52,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkAdmin(session.user.id);
+        checkUserAccess(session.user.id);
       }
       setLoading(false);
     });
@@ -63,10 +74,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setHasFullAccess(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, hasFullAccess, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NotificationBell } from '@/components/NotificationBell';
 
-const navItems = [
+const fullAccessNavItems = [
   { to: '/', label: 'Возражение', icon: FileText },
   { to: '/profile', label: 'Профиль', icon: UserCircle },
   { to: '/history', label: 'История', icon: FileStack },
@@ -16,15 +16,21 @@ const navItems = [
   { to: '/chat', label: 'Чат', icon: MessageCircle },
 ];
 
+const limitedNavItems = [
+  { to: '/lawyers', label: 'Юристы', icon: Users },
+  { to: '/profile', label: 'Профиль', icon: UserCircle },
+];
+
 const navLinkClass =
   'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10';
 const navLinkActiveClass = 'text-primary-foreground bg-primary-foreground/15';
 
 export function Header() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, hasFullAccess, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
+  const navItems = hasFullAccess ? fullAccessNavItems : limitedNavItems;
   const allItems = [
     ...navItems,
     ...(isAdmin ? [{ to: '/admin', label: 'Админ', icon: Settings }] : []),

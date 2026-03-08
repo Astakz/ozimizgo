@@ -22,8 +22,8 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim() || !password.trim() || !inviteCode.trim()) {
-      toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      toast({ title: 'Ошибка', description: 'Заполните обязательные поля', variant: 'destructive' });
       return;
     }
 
@@ -34,37 +34,42 @@ const Register = () => {
 
     setLoading(true);
     try {
-      // Validate invite code
-      const { data: valid, error: validateError } = await supabase.rpc('validate_invite_code', {
-        invite_code_value: inviteCode.trim().toUpperCase(),
-      });
-
-      if (validateError) throw validateError;
-      if (!valid) {
-        toast({ title: 'Ошибка', description: 'Неверный или уже использованный инвайт-код', variant: 'destructive' });
-        setLoading(false);
-        return;
+      // If invite code provided, validate it
+      if (inviteCode.trim()) {
+        const { data: valid, error: validateError } = await supabase.rpc('validate_invite_code', {
+          invite_code_value: inviteCode.trim().toUpperCase(),
+        });
+        if (validateError) throw validateError;
+        if (!valid) {
+          toast({ title: 'Ошибка', description: 'Неверный или уже использованный инвайт-код', variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
       }
 
-      // Sign up
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase(), role },
+          data: {
+            name: name.trim(),
+            invite_code: inviteCode.trim().toUpperCase() || '',
+            role,
+          },
         },
       });
 
       if (error) throw error;
 
-      // Mark invite code as used and set role
       if (signUpData.user) {
-        await supabase.rpc('use_invite_code', {
-          invite_code_value: inviteCode.trim().toUpperCase(),
-          used_by_user_id: signUpData.user.id,
-        });
+        // Mark invite code as used if provided
+        if (inviteCode.trim()) {
+          await supabase.rpc('use_invite_code', {
+            invite_code_value: inviteCode.trim().toUpperCase(),
+            used_by_user_id: signUpData.user.id,
+          });
+        }
 
-        // Update user_roles with selected role
         if (role === 'lawyer') {
           await supabase.from('user_roles').update({ role: 'lawyer' }).eq('user_id', signUpData.user.id);
         }
@@ -135,15 +140,16 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="invite">Инвайт-код</Label>
+              <Label htmlFor="invite">Инвайт-код <span className="text-muted-foreground font-normal">(необязательно)</span></Label>
               <Input
                 id="invite"
-                placeholder="Введите код приглашения"
+                placeholder="Если есть код приглашения"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 disabled={loading}
                 className="font-mono tracking-wider"
               />
+              <p className="text-xs text-muted-foreground">Без инвайт-кода доступен только просмотр юристов</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
