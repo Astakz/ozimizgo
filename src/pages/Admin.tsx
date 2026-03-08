@@ -33,7 +33,7 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
             <TabsTrigger value="generator" className="gap-2"><PenTool className="w-4 h-4" /> Возражение</TabsTrigger>
