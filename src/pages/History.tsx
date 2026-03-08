@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
