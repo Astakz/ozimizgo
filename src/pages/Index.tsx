@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PDFUploader } from '@/components/PDFUploader';
@@ -7,9 +7,12 @@ import { ObjectionDocument } from '@/components/ObjectionDocument';
 import { extractTextFromPDF, extractNotarialData } from '@/utils/pdfParser';
 import { generateObjectionDocumentText } from '@/utils/generateObjection';
 import { extractTextFromImage } from '@/utils/imageOcr';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 function isImageFile(file: File): boolean {
   return /^image\/(jpeg|jpg|png)$/.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
