@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      case_responses: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          lawyer_id: string
+          message: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          message: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_responses_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          attachments: Json | null
+          case_type: string
+          client_id: string
+          created_at: string
+          description: string
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          attachments?: Json | null
+          case_type?: string
+          client_id: string
+          created_at?: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          attachments?: Json | null
+          case_type?: string
+          client_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -77,6 +142,36 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          attachments: Json | null
+          created_at: string
+          id: string
+          is_read: boolean
+          message_text: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -119,6 +214,33 @@ export type Database = {
           profession?: string | null
           specialization?: string[] | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          client_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          lawyer_id: string
+          rating: number
+        }
+        Insert: {
+          client_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          rating?: number
+        }
+        Update: {
+          client_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          rating?: number
         }
         Relationships: []
       }

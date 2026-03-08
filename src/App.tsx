@@ -12,6 +12,9 @@ import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Lawyers from "./pages/Lawyers";
+import Cases from "./pages/Cases";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/lawyers" element={<ProtectedRoute><Lawyers /></ProtectedRoute>} />
+            <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

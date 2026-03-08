@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, X } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
@@ -10,6 +10,9 @@ const navItems = [
   { to: '/', label: 'Возражение', icon: FileText },
   { to: '/profile', label: 'Профиль', icon: UserCircle },
   { to: '/history', label: 'История', icon: FileStack },
+  { to: '/lawyers', label: 'Юристы', icon: Users },
+  { to: '/cases', label: 'Дела', icon: Briefcase },
+  { to: '/chat', label: 'Чат', icon: MessageCircle },
 ];
 
 const navLinkClass =
