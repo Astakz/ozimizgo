@@ -1,10 +1,21 @@
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus } from 'lucide-react';
+import { useState } from 'react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { to: '/', label: 'Возражение', icon: FilePlus },
+  { to: '/profile', label: 'Профиль', icon: UserCircle },
+  { to: '/history', label: 'История', icon: FileStack },
+];
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
 
   return (
     <header className="navy-gradient text-primary-foreground py-4 md:py-6 shadow-elevated">
@@ -24,26 +35,84 @@ export function Header() {
               </p>
             </div>
           </div>
+
           {user && (
-            <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Link to="/"><FilePlus className="w-4 h-4 mr-1" /> Возражение</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Link to="/profile"><UserCircle className="w-4 h-4 mr-1" /> Профиль</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Link to="/history"><FileStack className="w-4 h-4 mr-1" /> История</Link>
-              </Button>
-              {isAdmin && (
-                <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-                  <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> Админ</Link>
+            <>
+              {/* Desktop nav */}
+              <nav className="hidden md:flex items-center gap-2">
+                {navItems.map(item => (
+                  <Button
+                    key={item.to}
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "text-primary-foreground hover:bg-primary-foreground/10",
+                      location.pathname === item.to && "bg-primary-foreground/15"
+                    )}
+                  >
+                    <Link to={item.to}>
+                      <item.icon className="w-4 h-4 mr-1" /> {item.label}
+                    </Link>
+                  </Button>
+                ))}
+                {isAdmin && (
+                  <Button asChild variant="ghost" size="sm" className={cn("text-primary-foreground hover:bg-primary-foreground/10", location.pathname === '/admin' && "bg-primary-foreground/15")}>
+                    <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> Админ</Link>
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={signOut}>
+                  <LogOut className="w-4 h-4 mr-1" /> Выйти
                 </Button>
-              )}
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={signOut}>
-                <LogOut className="w-4 h-4 mr-1" /> Выйти
-              </Button>
-            </div>
+              </nav>
+
+              {/* Mobile hamburger */}
+              <Sheet open={open} onOpenChange={setOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden text-primary-foreground hover:bg-primary-foreground/10">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[280px] bg-background">
+                  <SheetHeader>
+                    <SheetTitle className="text-left">Меню</SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex flex-col gap-1 mt-6">
+                    {navItems.map(item => (
+                      <Button
+                        key={item.to}
+                        asChild
+                        variant={location.pathname === item.to ? 'secondary' : 'ghost'}
+                        className="justify-start w-full h-12"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Link to={item.to}>
+                          <item.icon className="w-5 h-5 mr-3" /> {item.label}
+                        </Link>
+                      </Button>
+                    ))}
+                    {isAdmin && (
+                      <Button
+                        asChild
+                        variant={location.pathname === '/admin' ? 'secondary' : 'ghost'}
+                        className="justify-start w-full h-12"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Link to="/admin"><Settings className="w-5 h-5 mr-3" /> Админ</Link>
+                      </Button>
+                    )}
+                    <div className="border-t my-3" />
+                    <Button
+                      variant="ghost"
+                      className="justify-start w-full h-12 text-destructive hover:text-destructive"
+                      onClick={() => { setOpen(false); signOut(); }}
+                    >
+                      <LogOut className="w-5 h-5 mr-3" /> Выйти
+                    </Button>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </>
           )}
         </div>
       </div>
