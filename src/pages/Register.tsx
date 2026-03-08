@@ -75,7 +75,6 @@ const Register = () => {
 
       const metaData: Record<string, string> = {
         name: name.trim(),
-        nickname: nickname.trim(),
         invite_code: isLawyer ? inviteCode.trim().toUpperCase() : '',
         role: isLawyer ? 'lawyer' : 'user',
         profession: isLawyer ? (profession === 'advocate' ? 'Адвокат' : 'Юрист') : '',
