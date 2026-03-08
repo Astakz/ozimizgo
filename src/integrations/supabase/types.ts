@@ -14,71 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      case_responses: {
-        Row: {
-          case_id: string
-          created_at: string
-          id: string
-          lawyer_id: string
-          message: string
-        }
-        Insert: {
-          case_id: string
-          created_at?: string
-          id?: string
-          lawyer_id: string
-          message: string
-        }
-        Update: {
-          case_id?: string
-          created_at?: string
-          id?: string
-          lawyer_id?: string
-          message?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "case_responses_case_id_fkey"
-            columns: ["case_id"]
-            isOneToOne: false
-            referencedRelation: "cases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cases: {
-        Row: {
-          attachments: Json | null
-          case_type: string
-          client_id: string
-          created_at: string
-          description: string
-          id: string
-          status: string
-          title: string
-        }
-        Insert: {
-          attachments?: Json | null
-          case_type?: string
-          client_id: string
-          created_at?: string
-          description: string
-          id?: string
-          status?: string
-          title: string
-        }
-        Update: {
-          attachments?: Json | null
-          case_type?: string
-          client_id?: string
-          created_at?: string
-          description?: string
-          id?: string
-          status?: string
-          title?: string
-        }
-        Relationships: []
-      }
       documents: {
         Row: {
           created_at: string
@@ -142,211 +77,30 @@ export type Database = {
         }
         Relationships: []
       }
-      lawyer_action_logs: {
-        Row: {
-          action_type: string
-          case_id: string
-          id: string
-          lawyer_id: string
-          performed_at: string
-        }
-        Insert: {
-          action_type: string
-          case_id: string
-          id?: string
-          lawyer_id: string
-          performed_at?: string
-        }
-        Update: {
-          action_type?: string
-          case_id?: string
-          id?: string
-          lawyer_id?: string
-          performed_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lawyer_action_logs_case_id_fkey"
-            columns: ["case_id"]
-            isOneToOne: false
-            referencedRelation: "cases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lawyer_case_permissions: {
-        Row: {
-          case_id: string
-          granted_at: string
-          granted_by: string
-          id: string
-          lawyer_id: string
-          permission_type: string
-        }
-        Insert: {
-          case_id: string
-          granted_at?: string
-          granted_by: string
-          id?: string
-          lawyer_id: string
-          permission_type: string
-        }
-        Update: {
-          case_id?: string
-          granted_at?: string
-          granted_by?: string
-          id?: string
-          lawyer_id?: string
-          permission_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lawyer_case_permissions_case_id_fkey"
-            columns: ["case_id"]
-            isOneToOne: false
-            referencedRelation: "cases"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          attachments: Json | null
-          created_at: string
-          id: string
-          is_read: boolean
-          message_text: string
-          receiver_id: string
-          sender_id: string
-        }
-        Insert: {
-          attachments?: Json | null
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message_text: string
-          receiver_id: string
-          sender_id: string
-        }
-        Update: {
-          attachments?: Json | null
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          message_text?: string
-          receiver_id?: string
-          sender_id?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          body: string | null
-          created_at: string
-          id: string
-          is_read: boolean
-          link: string | null
-          metadata: Json | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          metadata?: Json | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          link?: string | null
-          metadata?: Json | null
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
-          avatar_url: string | null
-          bio: string | null
           created_at: string
           email: string
-          experience: string | null
-          full_name: string | null
           id: string
           invite_code: string | null
           name: string
-          nickname: string | null
-          profession: string | null
-          specialization: string[] | null
           user_id: string
         }
         Insert: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string
           email: string
-          experience?: string | null
-          full_name?: string | null
           id?: string
           invite_code?: string | null
           name: string
-          nickname?: string | null
-          profession?: string | null
-          specialization?: string[] | null
           user_id: string
         }
         Update: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string
           email?: string
-          experience?: string | null
-          full_name?: string | null
           id?: string
           invite_code?: string | null
           name?: string
-          nickname?: string | null
-          profession?: string | null
-          specialization?: string[] | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      reviews: {
-        Row: {
-          client_id: string
-          comment: string | null
-          created_at: string
-          id: string
-          lawyer_id: string
-          rating: number
-        }
-        Insert: {
-          client_id: string
-          comment?: string | null
-          created_at?: string
-          id?: string
-          lawyer_id: string
-          rating?: number
-        }
-        Update: {
-          client_id?: string
-          comment?: string | null
-          created_at?: string
-          id?: string
-          lawyer_id?: string
-          rating?: number
         }
         Relationships: []
       }
@@ -373,20 +127,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_lawyer_perform_action: {
-        Args: { _action_type: string; _case_id: string; _lawyer_id: string }
-        Returns: boolean
-      }
-      generate_unique_username: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
-        Returns: boolean
-      }
-      is_nickname_unique: {
-        Args: { check_nickname: string; exclude_user_id?: string }
         Returns: boolean
       }
       use_invite_code: {
@@ -399,7 +144,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "lawyer"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -527,7 +272,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "lawyer"],
+      app_role: ["admin", "user"],
     },
   },
 } as const

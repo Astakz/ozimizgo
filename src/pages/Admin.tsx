@@ -1,17 +1,124 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, FileText, Key, LogOut, Settings, History } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
-import AdminUsers from '@/components/admin/AdminUsers';
-import AdminObjections from '@/components/admin/AdminObjections';
-import AdminInviteCodes from '@/components/admin/AdminInviteCodes';
-import AdminHistory from '@/components/admin/AdminHistory';
+import { Shield, Plus, Trash2, Ban, Users, Key, LogOut, Loader2, Copy } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface InviteCode {
+  id: string;
+  code: string;
+  is_used: boolean;
+  created_at: string;
+  used_at: string | null;
+}
+
+interface Profile {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  invite_code: string | null;
+  created_at: string;
+}
 
 const Admin = () => {
   const { signOut } = useAuth();
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'users';
+  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [newCode, setNewCode] = useState('');
+  const [loadingCodes, setLoadingCodes] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const fetchCodes = useCallback(async () => {
+    setLoadingCodes(true);
+    const { data, error } = await supabase
+      .from('invite_codes')
+      .select('id, code, is_used, created_at, used_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      setInviteCodes(data || []);
+    }
+    setLoadingCodes(false);
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      setUsers(data || []);
+    }
+    setLoadingUsers(false);
+  }, []);
+
+  useEffect(() => {
+    fetchCodes();
+    fetchUsers();
+  }, [fetchCodes, fetchUsers]);
+
+  const generateCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    setNewCode(code);
+  };
+
+  const createInviteCode = async () => {
+    if (!newCode.trim()) {
+      toast({ title: 'Ошибка', description: 'Введите или сгенерируйте код', variant: 'destructive' });
+      return;
+    }
+    setCreating(true);
+    const { error } = await supabase.from('invite_codes').insert({ code: newCode.trim().toUpperCase() });
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message === 'duplicate key value violates unique constraint "invite_codes_code_key"' ? 'Такой код уже существует' : error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Успешно', description: 'Инвайт-код создан' });
+      setNewCode('');
+      fetchCodes();
+    }
+    setCreating(false);
+  };
+
+  const deleteCode = async (id: string) => {
+    const { error } = await supabase.from('invite_codes').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Удалено' });
+      fetchCodes();
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    // Delete profile (user auth record stays but profile is removed)
+    const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Пользователь удалён' });
+      fetchUsers();
+    }
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({ title: 'Скопировано', description: code });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,38 +139,129 @@ const Admin = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
-            <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
-            <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" /> История</TabsTrigger>
-            <TabsTrigger value="objections" className="gap-2"><FileText className="w-4 h-4" /> Возражения</TabsTrigger>
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
+        <Tabs defaultValue="codes" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="codes" className="gap-2"><Key className="w-4 h-4" /> Инвайт-коды</TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2"><Settings className="w-4 h-4" /> Настройки</TabsTrigger>
+            <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="codes" className="space-y-6">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Создать инвайт-код</CardTitle>
+                <CardDescription>Введите код вручную или сгенерируйте случайный</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Код приглашения"
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                    className="font-mono tracking-wider"
+                  />
+                  <Button variant="outline" onClick={generateCode} type="button">Генерировать</Button>
+                  <Button onClick={createInviteCode} disabled={creating}>
+                    {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Создать
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Список инвайт-кодов</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingCodes ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : inviteCodes.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Нет инвайт-кодов</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Код</TableHead>
+                        <TableHead>Статус</TableHead>
+                        <TableHead>Создан</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inviteCodes.map((code) => (
+                        <TableRow key={code.id}>
+                          <TableCell className="font-mono tracking-wider font-medium">{code.code}</TableCell>
+                          <TableCell>
+                            <Badge variant={code.is_used ? 'secondary' : 'default'}>
+                              {code.is_used ? 'Использован' : 'Активен'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(code.created_at).toLocaleDateString('ru-RU')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => copyCode(code.code)}>
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => deleteCode(code.id)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="users">
-            <AdminUsers />
-          </TabsContent>
-
-          <TabsContent value="history">
-            <AdminHistory />
-          </TabsContent>
-
-          <TabsContent value="objections">
-            <AdminObjections />
-          </TabsContent>
-
-          <TabsContent value="codes">
-            <AdminInviteCodes />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <div className="text-center text-muted-foreground py-12">
-              <Settings className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p className="text-lg font-medium">Настройки</p>
-              <p className="text-sm mt-1">Раздел в разработке</p>
-            </div>
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Пользователи</CardTitle>
+                <CardDescription>{users.length} зарегистрировано</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingUsers ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : users.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Нет пользователей</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Имя</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Инвайт-код</TableHead>
+                        <TableHead>Дата регистрации</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.name}</TableCell>
+                          <TableCell>{u.email}</TableCell>
+                          <TableCell className="font-mono text-sm">{u.invite_code || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(u.created_at).toLocaleDateString('ru-RU')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" onClick={() => deleteUser(u.user_id)} className="text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

@@ -1,129 +1,42 @@
-import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle, PenTool } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { NavLink } from '@/components/NavLink';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { NotificationBell } from '@/components/NotificationBell';
-
-const fullAccessNavItems = [
-  { to: '/', label: 'Возражение', icon: FileText },
-  { to: '/profile', label: 'Профиль', icon: UserCircle },
-  { to: '/history', label: 'История', icon: FileStack },
-  { to: '/lawyers', label: 'Юристы', icon: Users },
-  { to: '/cases', label: 'Дела', icon: Briefcase },
-  { to: '/chat', label: 'Чат', icon: MessageCircle },
-];
-
-const limitedNavItems = [
-  { to: '/lawyers', label: 'Юристы', icon: Users },
-  { to: '/profile', label: 'Профиль', icon: UserCircle },
-];
-
-const navLinkClass =
-  'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10';
-const navLinkActiveClass = 'text-primary-foreground bg-primary-foreground/15';
+import { Link } from 'react-router-dom';
 
 export function Header() {
-  const { user, isAdmin, hasFullAccess, signOut } = useAuth();
-  const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
-
-  const navItems = hasFullAccess ? fullAccessNavItems : limitedNavItems;
-  const allItems = [
-    ...navItems,
-    ...(isAdmin ? [{ to: '/admin', label: 'Админ', icon: Settings }] : []),
-  ];
-
-  const handleSignOut = () => {
-    setOpen(false);
-    signOut();
-  };
+  const { user, isAdmin, signOut } = useAuth();
 
   return (
-    <header className="navy-gradient text-primary-foreground shadow-elevated sticky top-0 z-50">
+    <header className="navy-gradient text-primary-foreground py-4 md:py-6 shadow-elevated">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-14 md:h-16">
-          {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-2 shrink-0">
-            <Scale className="h-6 w-6 text-secondary" />
-            <Shield className="h-5 w-5 text-secondary hidden sm:block" />
-            <span className="font-serif font-bold text-base md:text-lg tracking-tight leading-tight hidden sm:inline">
-              Возражение
-            </span>
-          </NavLink>
-
-          {/* Desktop nav */}
-          {user && !isMobile && (
-            <nav className="flex items-center gap-1">
-              {allItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === '/'}
-                  className={navLinkClass}
-                  activeClassName={navLinkActiveClass}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </NavLink>
-              ))}
-              <NotificationBell />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 ml-1"
-                onClick={signOut}
-              >
-                <LogOut className="h-4 w-4 mr-1" />
-                Выйти
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              <Scale className="h-6 w-6 md:h-8 md:w-8 text-gold" />
+              <Shield className="h-5 w-5 md:h-6 md:w-6 text-gold-light hidden sm:block" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-tight">
+                Возражение на исполнительную надпись
+              </h1>
+              <p className="text-xs sm:text-sm text-gold-light mt-0.5 hidden sm:block">
+                Автоматическое формирование документа по законодательству РК
+              </p>
+            </div>
+          </div>
+          {user && (
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/history"><FileStack className="w-4 h-4 mr-1" /> История</Link>
               </Button>
-            </nav>
-          )}
-
-          {/* Mobile hamburger */}
-          {user && isMobile && (
-            <div className="flex items-center gap-1">
-              <NotificationBell />
-              <Sheet open={open} onOpenChange={setOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-primary-foreground">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-              <SheetContent side="right" className="w-72 navy-gradient border-border/20">
-                <SheetHeader>
-                  <SheetTitle className="text-primary-foreground flex items-center gap-2">
-                    <Scale className="h-5 w-5 text-secondary" />
-                    Меню
-                  </SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col gap-1 mt-6">
-                  {allItems.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.to === '/'}
-                      className="flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors"
-                      activeClassName={navLinkActiveClass}
-                      onClick={() => setOpen(false)}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </NavLink>
-                  ))}
-                  <div className="border-t border-primary-foreground/10 my-3" />
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium text-destructive-foreground/70 hover:bg-primary-foreground/10 transition-colors w-full text-left"
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Выйти
-                  </button>
-                </nav>
-              </SheetContent>
-            </Sheet>
+              {isAdmin && (
+                <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                  <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> Админ</Link>
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-1" /> Выйти
+              </Button>
             </div>
           )}
         </div>
