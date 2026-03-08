@@ -140,15 +140,16 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="invite">Инвайт-код</Label>
+              <Label htmlFor="invite">Инвайт-код <span className="text-muted-foreground font-normal">(необязательно)</span></Label>
               <Input
                 id="invite"
-                placeholder="Введите код приглашения"
+                placeholder="Если есть код приглашения"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 disabled={loading}
                 className="font-mono tracking-wider"
               />
+              <p className="text-xs text-muted-foreground">Без инвайт-кода доступен только просмотр юристов</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

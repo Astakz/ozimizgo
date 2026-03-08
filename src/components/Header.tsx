@@ -30,6 +30,7 @@ export function Header() {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
+  const navItems = hasFullAccess ? fullAccessNavItems : limitedNavItems;
   const allItems = [
     ...navItems,
     ...(isAdmin ? [{ to: '/admin', label: 'Админ', icon: Settings }] : []),

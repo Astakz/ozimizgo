@@ -20,6 +20,28 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+export const FullAccessRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, hasFullAccess, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!hasFullAccess) {
+    return <Navigate to="/lawyers" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAdmin, loading } = useAuth();
 
