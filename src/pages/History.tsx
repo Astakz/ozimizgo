@@ -69,11 +69,6 @@ export default function History() {
       toast.error('Ошибка генерации PDF');
     }
   };
-    } catch (e) {
-      console.error(e);
-      toast.error('Ошибка генерации PDF');
-    }
-  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
