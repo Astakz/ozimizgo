@@ -300,9 +300,30 @@ export default function Cases() {
                           <span className="text-xs text-muted-foreground">от {c.client_name}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-muted-foreground shrink-0">
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="text-sm">{c.response_count}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {user && c.client_id === user.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={e => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить дело?</AlertDialogTitle>
+                                <AlertDialogDescription>Вы действительно хотите удалить это дело? Все отклики будут удалены.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={e => deleteCase(c.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Удалить</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MessageSquare className="h-4 w-4" />
+                          <span className="text-sm">{c.response_count}</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
