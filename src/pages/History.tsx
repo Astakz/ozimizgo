@@ -64,14 +64,11 @@ export default function History() {
     try {
       await generateSelectablePDF(doc.generated_objection, null);
       toast.success('PDF скачан');
-        const blob = new Blob([doc.generated_objection], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `objection_${doc.original_filename}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Ошибка генерации PDF');
+    }
+  };
     } catch (e) {
       console.error(e);
       toast.error('Ошибка генерации PDF');
