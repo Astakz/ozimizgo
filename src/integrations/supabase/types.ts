@@ -85,6 +85,7 @@ export type Database = {
           extracted_data: Json | null
           extracted_text: string
           file_type: string
+          file_url: string | null
           generated_objection: string
           id: string
           original_filename: string
@@ -95,6 +96,7 @@ export type Database = {
           extracted_data?: Json | null
           extracted_text: string
           file_type: string
+          file_url?: string | null
           generated_objection: string
           id?: string
           original_filename: string
@@ -105,6 +107,7 @@ export type Database = {
           extracted_data?: Json | null
           extracted_text?: string
           file_type?: string
+          file_url?: string | null
           generated_objection?: string
           id?: string
           original_filename?: string

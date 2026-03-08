@@ -73,20 +73,42 @@ const Index = () => {
       const objection = generateObjectionDocumentText(currentData);
       setObjectionText(objection);
 
-      // Save to history
+      // Save to history with PDF upload
       if (user) {
-        const { error } = await supabase.from('documents').insert({
-          user_id: user.id,
-          original_filename: fileInfoRef.current.name,
-          file_type: fileInfoRef.current.type,
-          extracted_text: extractedTextRef.current,
-          generated_objection: objection,
-          extracted_data: currentData as any,
-        });
-        if (error) {
-          console.error('Error saving document:', error);
-        } else {
-          toast.success('Документ сохранён в историю');
+        try {
+          // Generate PDF blob
+          const { generateSelectablePDF } = await import('@/utils/pdfDocumentGenerator');
+          const pdfDoc = await generateSelectablePDF(objection, null);
+          const pdfBlob = pdfDoc.output('blob');
+          
+          const fileName = `${user.id}/${Date.now()}_${fileInfoRef.current.name.replace(/\.[^.]+$/, '')}.pdf`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
+
+          let fileUrl: string | null = null;
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName);
+            fileUrl = urlData.publicUrl;
+          }
+
+          const { error } = await supabase.from('documents').insert({
+            user_id: user.id,
+            original_filename: fileInfoRef.current.name,
+            file_type: fileInfoRef.current.type,
+            extracted_text: extractedTextRef.current,
+            generated_objection: objection,
+            extracted_data: currentData as any,
+            file_url: fileUrl,
+          } as any);
+          if (error) {
+            console.error('Error saving document:', error);
+          } else {
+            toast.success('Документ сохранён в историю');
+          }
+        } catch (saveErr) {
+          console.error('Error saving document:', saveErr);
         }
       }
     }

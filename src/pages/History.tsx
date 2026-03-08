@@ -24,6 +24,7 @@ interface DocumentRecord {
   generated_objection: string;
   extracted_data: any;
   created_at: string;
+  file_url: string | null;
 }
 
 export default function History() {
@@ -33,6 +34,7 @@ export default function History() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
   const [viewMode, setViewMode] = useState<'text' | 'objection' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
@@ -82,9 +84,33 @@ export default function History() {
     setDeleting(null);
   };
 
-  const handleDownloadPDF = async (doc: DocumentRecord) => {
+  const handleDownload = async (doc: DocumentRecord) => {
+    // If file_url exists, download directly
+    if (doc.file_url) {
+      const link = document.createElement('a');
+      link.href = doc.file_url;
+      link.download = `${doc.original_filename.replace(/\.[^.]+$/, '')}_возражение.pdf`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Скачивание началось');
+      return;
+    }
+
+    // Fallback: generate PDF on the fly
     try {
-      await generateSelectablePDF(doc.generated_objection, null);
+      const pdfDoc = await generateSelectablePDF(doc.generated_objection, null);
+      const blob = pdfDoc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${doc.original_filename.replace(/\.[^.]+$/, '')}_возражение.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       toast.success('PDF скачан');
     } catch (e) {
       console.error(e);
@@ -94,11 +120,8 @@ export default function History() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
     });
   };
 
@@ -112,6 +135,7 @@ export default function History() {
             <h2 className="text-2xl font-serif font-bold text-foreground">История документов</h2>
           </div>
 
+          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -151,6 +175,7 @@ export default function History() {
             )}
           </div>
 
+          {/* Document list */}
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -175,15 +200,25 @@ export default function History() {
           ) : (
             <div className="space-y-3">
               {filteredDocuments.map((doc) => (
-                <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={doc.id}
+                  className={cn(
+                    "transition-all cursor-pointer",
+                    activeId === doc.id
+                      ? "ring-2 ring-primary shadow-lg"
+                      : "hover:shadow-md"
+                  )}
+                  onClick={() => setActiveId(activeId === doc.id ? null : doc.id)}
+                >
                   <CardContent className="p-4 sm:p-5">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      {/* File info */}
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div className="mt-0.5 shrink-0">
                           {doc.file_type === 'pdf' ? (
-                            <FileText className="h-5 w-5 text-red-500" />
+                            <FileText className="h-5 w-5 text-destructive" />
                           ) : (
-                            <Image className="h-5 w-5 text-blue-500" />
+                            <Image className="h-5 w-5 text-primary" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -193,47 +228,49 @@ export default function History() {
                             <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
                               {doc.file_type}
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
                               Создано
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+
+                      {/* Action buttons — large tap targets for mobile */}
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 sm:h-8 sm:w-8"
                           title="Просмотр текста"
-                          onClick={() => { setSelectedDoc(doc); setViewMode('text'); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); setViewMode('text'); }}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 sm:h-8 sm:w-8"
                           title="Просмотр возражения"
-                          onClick={() => { setSelectedDoc(doc); setViewMode('objection'); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); setViewMode('objection'); }}
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="default"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-10 w-10 sm:h-8 sm:w-8"
                           title="Скачать PDF"
-                          onClick={() => handleDownloadPDF(doc)}
+                          onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-10 w-10 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
                           title="Удалить"
                           disabled={deleting === doc.id}
-                          onClick={() => handleDelete(doc.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(doc.id); }}
                         >
                           {deleting === doc.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -252,6 +289,7 @@ export default function History() {
       </main>
       <Footer />
 
+      {/* Preview dialog */}
       <Dialog open={!!viewMode} onOpenChange={() => { setViewMode(null); setSelectedDoc(null); }}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
