@@ -111,15 +111,47 @@ export default function Profile() {
     }
   };
 
+  const [nicknameError, setNicknameError] = useState('');
+
+  const checkNicknameUnique = async (value: string) => {
+    if (!value.trim() || !user) return;
+    const { data } = await supabase.rpc('is_nickname_unique', {
+      check_nickname: value.trim(),
+      exclude_user_id: user.id,
+    });
+    if (!data) {
+      setNicknameError('Это имя пользователя уже занято');
+    } else {
+      setNicknameError('');
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
+    if (nicknameError) {
+      toast.error('Исправьте ошибки перед сохранением');
+      return;
+    }
     setSaving(true);
     try {
+      // Check uniqueness one more time
+      if (nickname.trim()) {
+        const { data: isUnique } = await supabase.rpc('is_nickname_unique', {
+          check_nickname: nickname.trim(),
+          exclude_user_id: user.id,
+        });
+        if (!isUnique) {
+          toast.error('Имя пользователя уже занято');
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: fullName,
-          nickname,
+          nickname: nickname.trim(),
           bio,
           profession,
           specialization,
