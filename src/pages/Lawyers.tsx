@@ -41,6 +41,20 @@ const SPECIALIZATIONS = [
   'Семейное право', 'Трудовое право', 'Налоговое право', 'Корпоративное право',
 ];
 
+const PROFESSIONS = [
+  { value: 'all', label: 'Все статусы' },
+  { value: 'адвокат', label: 'Адвокат' },
+  { value: 'юрист', label: 'Юрист' },
+  { value: 'non_lawyer', label: 'Не юрист' },
+];
+
+const RATING_OPTIONS = [
+  { value: '0', label: 'Любой рейтинг' },
+  { value: '3', label: '⭐ 3+' },
+  { value: '4', label: '⭐ 4+' },
+  { value: '4.5', label: '⭐ 4.5+' },
+];
+
 export default function Lawyers() {
   const { user } = useAuth();
   const navigate = useNavigate();
