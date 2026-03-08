@@ -44,10 +44,14 @@ const Admin = () => {
   const { signOut } = useAuth();
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [newCode, setNewCode] = useState('');
   const [loadingCodes, setLoadingCodes] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingDocs, setLoadingDocs] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [viewType, setViewType] = useState<'text' | 'objection'>('objection');
 
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
