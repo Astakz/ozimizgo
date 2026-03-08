@@ -21,7 +21,7 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim() || !password.trim() || !inviteCode.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !inviteCode.trim() || !profession) {
       toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
       return;
     }
