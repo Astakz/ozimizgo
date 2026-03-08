@@ -19,11 +19,14 @@ function isImageFile(file: File): boolean {
 }
 
 const Index = () => {
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedDocument, setParsedDocument] = useState<ParsedDocument | null>(null);
   const [currentData, setCurrentData] = useState<NotarialData | null>(null);
   const [objectionText, setObjectionText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const extractedTextRef = useRef<string>('');
+  const fileInfoRef = useRef<{ name: string; type: string }>({ name: '', type: '' });
 
   const handleFileSelect = async (file: File) => {
     setIsProcessing(true);
