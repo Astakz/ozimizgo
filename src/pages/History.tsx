@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, Search, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
 interface DocumentRecord {
@@ -27,6 +33,22 @@ export default function History() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
   const [viewMode, setViewMode] = useState<'text' | 'objection' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      if (searchQuery && !doc.original_filename.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      const docDate = new Date(doc.created_at);
+      if (dateFrom && docDate < new Date(dateFrom.setHours(0, 0, 0, 0))) return false;
+      if (dateTo && docDate > new Date(new Date(dateTo).setHours(23, 59, 59, 999))) return false;
+      return true;
+    });
+  }, [documents, searchQuery, dateFrom, dateTo]);
+
+  const hasFilters = searchQuery || dateFrom || dateTo;
+  const clearFilters = () => { setSearchQuery(''); setDateFrom(undefined); setDateTo(undefined); };
 
   useEffect(() => {
     if (user) fetchDocuments();
@@ -90,21 +112,69 @@ export default function History() {
             <h2 className="text-2xl font-serif font-bold text-foreground">История документов</h2>
           </div>
 
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по имени файла..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("justify-start text-left font-normal w-full sm:w-[180px]", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, 'dd.MM.yyyy') : 'От даты'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ru} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("justify-start text-left font-normal w-full sm:w-[180px]", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, 'dd.MM.yyyy') : 'До даты'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ru} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            {hasFilters && (
+              <Button variant="ghost" size="icon" onClick={clearFilters} title="Сбросить фильтры">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : documents.length === 0 ? (
+          ) : filteredDocuments.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <FileStack className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p className="text-lg font-medium">Нет сохранённых документов</p>
-                <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
+                {hasFilters ? (
+                  <>
+                    <p className="text-lg font-medium">Ничего не найдено</p>
+                    <p className="text-sm mt-1">Попробуйте изменить параметры поиска</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium">Нет сохранённых документов</p>
+                    <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <Card key={doc.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-3">
