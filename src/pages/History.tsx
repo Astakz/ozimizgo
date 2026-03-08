@@ -16,7 +16,7 @@ interface DocumentRecord {
   file_type: string;
   extracted_text: string;
   generated_objection: string;
-  extracted_data: NotarialData | null;
+  extracted_data: any;
   created_at: string;
 }
 
