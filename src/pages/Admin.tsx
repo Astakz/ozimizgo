@@ -151,6 +151,21 @@ const Admin = () => {
     toast({ title: 'Скопировано', description: code });
   };
 
+  const deleteDocument = async (id: string) => {
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Документ удалён' });
+      fetchDocuments();
+    }
+  };
+
+  const getUserEmail = (userId: string) => {
+    const u = users.find((p) => p.user_id === userId);
+    return u?.email || userId.slice(0, 8) + '...';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="navy-gradient text-primary-foreground py-4 shadow-elevated">
