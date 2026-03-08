@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, Image, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PDFUploaderProps {
@@ -7,6 +7,19 @@ interface PDFUploaderProps {
   isProcessing: boolean;
   isProcessed: boolean;
   error: string | null;
+}
+
+const ACCEPTED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+];
+
+const ACCEPTED_EXTENSIONS = '.pdf,.jpg,.jpeg,.png';
+
+function isAcceptedFile(file: File): boolean {
+  return ACCEPTED_TYPES.includes(file.type) || /\.(pdf|jpe?g|png)$/i.test(file.name);
 }
 
 export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: PDFUploaderProps) {
@@ -28,7 +41,7 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
+    if (file && isAcceptedFile(file)) {
       setFileName(file.name);
       onFileSelect(file);
     }
@@ -57,7 +70,7 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
       >
         <input
           type="file"
-          accept=".pdf,application/pdf"
+          accept={ACCEPTED_EXTENSIONS}
           onChange={handleFileInput}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={isProcessing}
@@ -69,7 +82,7 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
               <Loader2 className="h-12 w-12 sm:h-16 sm:w-16 text-gold animate-spin" />
               <div>
                 <p className="text-base sm:text-lg font-semibold text-foreground">Обработка документа...</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Извлечение данных из PDF</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Извлечение данных из документа</p>
               </div>
             </>
           ) : isProcessed && !error ? (
@@ -92,19 +105,22 @@ export function PDFUploader({ onFileSelect, isProcessing, isProcessed, error }: 
             <>
               <div className="relative">
                 <Upload className="h-12 w-12 sm:h-16 sm:w-16 text-navy-medium" />
-                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gold absolute -bottom-1 -right-1" />
+                <div className="absolute -bottom-1 -right-1 flex gap-0.5">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gold" />
+                  <Image className="h-5 w-5 sm:h-6 sm:w-6 text-gold" />
+                </div>
               </div>
               <div>
                 <p className="text-base sm:text-lg font-semibold text-foreground">
                   Загрузите исполнительную надпись
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  <span className="hidden sm:inline">Перетащите PDF-файл сюда или </span>
+                  <span className="hidden sm:inline">Перетащите файл сюда или </span>
                   <span className="sm:hidden">Нажмите для </span>
                   нажмите для выбора
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 sm:mt-3">
-                  Поддерживается только PDF формат (Е-Нотариат)
+                  PDF, JPG, JPEG, PNG (Е-Нотариат или фото документа)
                 </p>
               </div>
             </>

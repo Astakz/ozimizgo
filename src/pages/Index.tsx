@@ -6,9 +6,14 @@ import { ExtractedDataPreview } from '@/components/ExtractedDataPreview';
 import { ObjectionDocument } from '@/components/ObjectionDocument';
 import { extractTextFromPDF, extractNotarialData } from '@/utils/pdfParser';
 import { generateObjectionDocumentText } from '@/utils/generateObjection';
+import { extractTextFromImage } from '@/utils/imageOcr';
 import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
+
+function isImageFile(file: File): boolean {
+  return /^image\/(jpeg|jpg|png)$/.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+}
 
 const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -25,10 +30,16 @@ const Index = () => {
     setObjectionText(null);
 
     try {
-      const text = await extractTextFromPDF(file);
+      let text: string;
+
+      if (isImageFile(file)) {
+        text = await extractTextFromImage(file);
+      } else {
+        text = await extractTextFromPDF(file);
+      }
       
       if (!text || text.trim().length < 50) {
-        throw new Error('PDF-файл пуст или не содержит достаточно текста');
+        throw new Error('Файл пуст или не содержит достаточно текста');
       }
 
       const parsed = extractNotarialData(text);
@@ -36,8 +47,8 @@ const Index = () => {
       setCurrentData(parsed.extractedData);
 
     } catch (err) {
-      console.error('Error processing PDF:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка при обработке PDF файла');
+      console.error('Error processing file:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка при обработке файла');
     } finally {
       setIsProcessing(false);
     }
@@ -45,7 +56,6 @@ const Index = () => {
 
   const handleDataChange = (updatedData: NotarialData) => {
     setCurrentData(updatedData);
-    // Clear objection if data changed
     setObjectionText(null);
   };
 
@@ -62,7 +72,6 @@ const Index = () => {
       
       <main className="flex-1 container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
         <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
-          {/* Upload Section */}
           <section className="animate-fade-in">
             <PDFUploader
               onFileSelect={handleFileSelect}
@@ -72,7 +81,6 @@ const Index = () => {
             />
           </section>
 
-          {/* Extracted Data Section */}
           {parsedDocument && currentData && (
             <>
               <div className="flex justify-center">
@@ -90,7 +98,6 @@ const Index = () => {
             </>
           )}
 
-          {/* Generated Document Section */}
           {objectionText && (
             <>
               <Separator className="my-6 sm:my-8" />
@@ -101,7 +108,6 @@ const Index = () => {
             </>
           )}
 
-          {/* Instructions when no document */}
           {!parsedDocument && !isProcessing && (
             <section className="text-center py-6 sm:py-8 animate-fade-in">
               <h2 className="text-lg sm:text-xl font-serif font-semibold text-foreground mb-3 sm:mb-4">
@@ -109,7 +115,7 @@ const Index = () => {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {[
-                  { step: '1', title: 'Загрузите PDF', desc: 'Исполнительная надпись нотариуса из Е-Нотариат' },
+                  { step: '1', title: 'Загрузите документ', desc: 'PDF, фото или скриншот исполнительной надписи' },
                   { step: '2', title: 'Проверьте данные', desc: 'Отредактируйте при необходимости' },
                   { step: '3', title: 'Готовый документ', desc: 'Возражение в официальном формате РК' },
                 ].map((item) => (
