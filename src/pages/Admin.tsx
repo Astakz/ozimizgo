@@ -10,6 +10,8 @@ import AdminObjectionGenerator from '@/components/admin/AdminObjectionGenerator'
 
 const Admin = () => {
   const { signOut } = useAuth();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'users';
 
   return (
     <div className="min-h-screen bg-background">
