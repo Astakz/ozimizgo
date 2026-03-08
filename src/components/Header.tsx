@@ -1,4 +1,4 @@
-import { Scale, Shield, LogOut, Settings } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
