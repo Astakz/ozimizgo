@@ -25,15 +25,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasFullAccess, setHasFullAccess] = useState(false);
 
-  const checkAdmin = async (userId: string) => {
-    const { data } = await supabase
+  const checkUserAccess = async (userId: string) => {
+    const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
-    setIsAdmin(!!data);
+    setIsAdmin(!!roleData);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('invite_code')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setHasFullAccess(!!profile?.invite_code && profile.invite_code.trim() !== '');
   };
 
   useEffect(() => {
