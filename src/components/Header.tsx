@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const navItems = [
   { to: '/', label: 'Возражение', icon: FileText },
