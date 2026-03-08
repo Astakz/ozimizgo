@@ -1,12 +1,12 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, FileText, Key, LogOut, Briefcase, Settings, PenTool } from 'lucide-react';
+import { Shield, Users, FileText, Key, LogOut, Settings, History } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminObjections from '@/components/admin/AdminObjections';
 import AdminInviteCodes from '@/components/admin/AdminInviteCodes';
-import AdminObjectionGenerator from '@/components/admin/AdminObjectionGenerator';
+import AdminHistory from '@/components/admin/AdminHistory';
 
 const Admin = () => {
   const { signOut } = useAuth();
