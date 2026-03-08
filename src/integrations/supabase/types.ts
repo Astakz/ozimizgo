@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      documents: {
+        Row: {
+          created_at: string
+          extracted_data: Json | null
+          extracted_text: string
+          file_type: string
+          generated_objection: string
+          id: string
+          original_filename: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_data?: Json | null
+          extracted_text: string
+          file_type: string
+          generated_objection: string
+          id?: string
+          original_filename: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_data?: Json | null
+          extracted_text?: string
+          file_type?: string
+          generated_objection?: string
+          id?: string
+          original_filename?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invite_codes: {
         Row: {
           code: string
