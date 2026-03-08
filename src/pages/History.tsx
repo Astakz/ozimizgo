@@ -190,7 +190,7 @@ export default function History() {
                             <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
                               {doc.file_type}
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground">
                               Создано
                             </span>
                           </div>
