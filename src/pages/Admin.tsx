@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, Users, FileText, Key, LogOut, Briefcase, Settings, PenTool } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminObjections from '@/components/admin/AdminObjections';
 import AdminInviteCodes from '@/components/admin/AdminInviteCodes';
@@ -10,6 +10,8 @@ import AdminObjectionGenerator from '@/components/admin/AdminObjectionGenerator'
 
 const Admin = () => {
   const { signOut } = useAuth();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'users';
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,7 +33,7 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
             <TabsTrigger value="generator" className="gap-2"><PenTool className="w-4 h-4" /> Возражение</TabsTrigger>
