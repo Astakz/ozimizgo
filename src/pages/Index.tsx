@@ -37,6 +37,8 @@ const Index = () => {
 
     try {
       let text: string;
+      const isImage = isImageFile(file);
+      fileInfoRef.current = { name: file.name, type: isImage ? 'image' : 'pdf' };
 
       if (isImageFile(file)) {
         text = await extractTextFromImage(file);
