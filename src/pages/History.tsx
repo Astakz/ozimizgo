@@ -4,10 +4,10 @@ import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, Check } from 'lucide-react';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, DownloadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
@@ -30,6 +30,9 @@ export default function History() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadAllProgress, setDownloadAllProgress] = useState(0);
+
   useEffect(() => {
     if (user) fetchDocuments();
   }, [user]);
@@ -70,8 +73,9 @@ export default function History() {
       setDownloadProgress(40);
       await new Promise(r => setTimeout(r, 200));
       setDownloadProgress(70);
-      await generateSelectablePDF(doc.generated_objection, null);
+      const pdf = await generateSelectablePDF(doc.generated_objection, null);
       setDownloadProgress(100);
+      pdf.save(`${doc.original_filename.replace(/\.[^.]+$/, '')}_возражение.pdf`);
       await new Promise(r => setTimeout(r, 500));
       toast.success('PDF скачан');
     } catch (e) {
@@ -81,6 +85,28 @@ export default function History() {
       setDownloading(null);
       setDownloadProgress(0);
     }
+  };
+
+  const handleDownloadAll = async () => {
+    if (documents.length === 0) return;
+    setDownloadingAll(true);
+    setDownloadAllProgress(0);
+    let success = 0;
+    for (let i = 0; i < documents.length; i++) {
+      try {
+        const doc = documents[i];
+        const pdf = await generateSelectablePDF(doc.generated_objection, null);
+        pdf.save(`${doc.original_filename.replace(/\.[^.]+$/, '')}_возражение.pdf`);
+        success++;
+      } catch (e) {
+        console.error(e);
+      }
+      setDownloadAllProgress(Math.round(((i + 1) / documents.length) * 100));
+    }
+    await new Promise(r => setTimeout(r, 400));
+    toast.success(`Скачано ${success} из ${documents.length} документов`);
+    setDownloadingAll(false);
+    setDownloadAllProgress(0);
   };
 
   const formatDate = (dateStr: string) => {
@@ -98,10 +124,37 @@ export default function History() {
       <Header />
       <main className="flex-1 container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <FileStack className="h-7 w-7 text-gold" />
-            <h2 className="text-2xl font-serif font-bold text-foreground">История документов</h2>
+          {/* Header row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <FileStack className="h-7 w-7 text-secondary" />
+              <h1 className="text-2xl font-serif font-bold text-foreground">История документов</h1>
+            </div>
+            {documents.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={downloadingAll}
+                onClick={handleDownloadAll}
+                className="gap-2 self-start sm:self-auto"
+              >
+                {downloadingAll ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <DownloadCloud className="h-4 w-4" />
+                )}
+                Скачать все ({documents.length})
+              </Button>
+            )}
           </div>
+
+          {/* Download all progress */}
+          {downloadingAll && (
+            <div className="mb-4 space-y-1">
+              <Progress value={downloadAllProgress} className="h-2" />
+              <p className="text-xs text-muted-foreground text-right">{downloadAllProgress}%</p>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-12">
@@ -119,34 +172,37 @@ export default function History() {
             <div className="space-y-3">
               {documents.map((doc) => (
                 <Card key={doc.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 sm:p-5">
-                    <div className="flex items-start justify-between gap-3">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      {/* Info */}
                       <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div className="mt-0.5 shrink-0">
                           {doc.file_type === 'pdf' ? (
-                            <FileText className="h-5 w-5 text-red-500" />
+                            <FileText className="h-5 w-5 text-destructive" />
                           ) : (
-                            <Image className="h-5 w-5 text-blue-500" />
+                            <Image className="h-5 w-5 text-primary" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">{doc.original_filename}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <p className="font-medium text-foreground truncate text-sm sm:text-base">{doc.original_filename}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                             <span className="text-xs text-muted-foreground">{formatDate(doc.created_at)}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
                               {doc.file_type}
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground">
                               Создано
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-9 w-9 sm:h-8 sm:w-8"
                           title="Просмотр текста"
                           onClick={() => { setSelectedDoc(doc); setViewMode('text'); }}
                         >
@@ -155,7 +211,7 @@ export default function History() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-9 w-9 sm:h-8 sm:w-8"
                           title="Просмотр возражения"
                           onClick={() => { setSelectedDoc(doc); setViewMode('objection'); }}
                         >
@@ -164,7 +220,7 @@ export default function History() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-9 w-9 sm:h-8 sm:w-8"
                           title="Скачать PDF"
                           disabled={downloading === doc.id}
                           onClick={() => handleDownloadPDF(doc)}
@@ -178,7 +234,7 @@ export default function History() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-9 w-9 sm:h-8 sm:w-8 text-destructive hover:text-destructive"
                           title="Удалить"
                           disabled={deleting === doc.id}
                           onClick={() => handleDelete(doc.id)}
@@ -191,6 +247,8 @@ export default function History() {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Download progress */}
                     {downloading === doc.id && (
                       <div className="mt-3 space-y-1">
                         <Progress value={downloadProgress} className="h-2" />
@@ -206,6 +264,7 @@ export default function History() {
       </main>
       <Footer />
 
+      {/* View dialog */}
       <Dialog open={!!viewMode} onOpenChange={() => { setViewMode(null); setSelectedDoc(null); }}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -213,6 +272,9 @@ export default function History() {
               {viewMode === 'text' ? 'Извлечённый текст' : 'Возражение'}
               {selectedDoc && ` — ${selectedDoc.original_filename}`}
             </DialogTitle>
+            <DialogDescription>
+              {viewMode === 'text' ? 'Текст, извлечённый из загруженного документа' : 'Сгенерированное возражение на исполнительную надпись'}
+            </DialogDescription>
           </DialogHeader>
           <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg leading-relaxed">
             {viewMode === 'text' ? selectedDoc?.extracted_text : selectedDoc?.generated_objection}
