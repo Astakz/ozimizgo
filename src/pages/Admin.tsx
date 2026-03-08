@@ -8,7 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Plus, Trash2, Ban, Users, Key, LogOut, Loader2, Copy } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface InviteCode {
@@ -25,6 +27,16 @@ interface Profile {
   name: string;
   email: string;
   invite_code: string | null;
+  created_at: string;
+}
+
+interface Document {
+  id: string;
+  user_id: string;
+  original_filename: string;
+  file_type: string;
+  extracted_text: string;
+  generated_objection: string;
   created_at: string;
 }
 
