@@ -62,12 +62,8 @@ export default function History() {
 
   const handleDownloadPDF = async (doc: DocumentRecord) => {
     try {
-      if (doc.extracted_data) {
-        const sections = generateObjectionDocument(doc.extracted_data);
-        await generatePDF(sections, doc.extracted_data);
-        toast.success('PDF скачан');
-      } else {
-        // Fallback: download objection as text
+      await generateSelectablePDF(doc.generated_objection, null);
+      toast.success('PDF скачан');
         const blob = new Blob([doc.generated_objection], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
