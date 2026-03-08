@@ -26,7 +26,7 @@ const navLinkClass =
 const navLinkActiveClass = 'text-primary-foreground bg-primary-foreground/15';
 
 export function Header() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, hasFullAccess, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
