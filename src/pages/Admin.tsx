@@ -45,9 +45,8 @@ const Admin = () => {
             <AdminUsers />
           </TabsContent>
 
-          <TabsContent value="generator">
-            <AdminObjectionGenerator />
-          </TabsContent>
+
+
 
           <TabsContent value="objections">
             <AdminObjections />
