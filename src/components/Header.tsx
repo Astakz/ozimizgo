@@ -63,10 +63,11 @@ export function Header() {
                   {item.label}
                 </NavLink>
               ))}
+              <NotificationBell />
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 ml-2"
+                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 ml-1"
                 onClick={signOut}
               >
                 <LogOut className="h-4 w-4 mr-1" />
