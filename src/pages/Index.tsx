@@ -40,7 +40,7 @@ const Index = () => {
       const isImage = isImageFile(file);
       fileInfoRef.current = { name: file.name, type: isImage ? 'image' : 'pdf' };
 
-      if (isImageFile(file)) {
+      if (isImage) {
         text = await extractTextFromImage(file);
       } else {
         text = await extractTextFromPDF(file);
