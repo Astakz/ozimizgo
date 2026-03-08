@@ -166,9 +166,14 @@ export default function History() {
                           size="icon"
                           className="h-8 w-8"
                           title="Скачать PDF"
+                          disabled={downloading === doc.id}
                           onClick={() => handleDownloadPDF(doc)}
                         >
-                          <Download className="h-4 w-4" />
+                          {downloading === doc.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
