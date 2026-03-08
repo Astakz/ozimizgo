@@ -68,10 +68,27 @@ const Index = () => {
     setObjectionText(null);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (currentData) {
       const objection = generateObjectionDocumentText(currentData);
       setObjectionText(objection);
+
+      // Save to history
+      if (user) {
+        const { error } = await supabase.from('documents').insert({
+          user_id: user.id,
+          original_filename: fileInfoRef.current.name,
+          file_type: fileInfoRef.current.type,
+          extracted_text: extractedTextRef.current,
+          generated_objection: objection,
+          extracted_data: currentData as any,
+        });
+        if (error) {
+          console.error('Error saving document:', error);
+        } else {
+          toast.success('Документ сохранён в историю');
+        }
+      }
     }
   };
 
