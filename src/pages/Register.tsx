@@ -23,7 +23,6 @@ const SPECIALIZATIONS = [
 const Register = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
