@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Star, Search, MessageCircle, Loader2, Users } from 'lucide-react';
@@ -36,34 +35,12 @@ interface Review {
   client_name?: string;
 }
 
-const SPECIALIZATIONS = [
-  'Все', 'Уголовное право', 'Гражданское право', 'Административное право',
-  'Семейное право', 'Трудовое право', 'Налоговое право', 'Корпоративное право',
-];
-
-const PROFESSIONS = [
-  { value: 'all', label: 'Все статусы' },
-  { value: 'адвокат', label: 'Адвокат' },
-  { value: 'юрист', label: 'Юрист' },
-  { value: 'non_lawyer', label: 'Не юрист' },
-];
-
-const RATING_OPTIONS = [
-  { value: '0', label: 'Любой рейтинг' },
-  { value: '3', label: '⭐ 3+' },
-  { value: '4', label: '⭐ 4+' },
-  { value: '4.5', label: '⭐ 4.5+' },
-];
-
 export default function Lawyers() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [specFilter, setSpecFilter] = useState('Все');
-  const [profFilter, setProfFilter] = useState('all');
-  const [ratingFilter, setRatingFilter] = useState('0');
   const [selectedLawyer, setSelectedLawyer] = useState<LawyerProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -78,9 +55,25 @@ export default function Lawyers() {
 
   const fetchLawyers = async () => {
     setLoading(true);
+
+    // Get user_ids with lawyer role
+    const { data: lawyerRoles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'lawyer');
+
+    if (rolesError || !lawyerRoles?.length) {
+      setLawyers([]);
+      setLoading(false);
+      return;
+    }
+
+    const lawyerIds = lawyerRoles.map(r => r.user_id);
+
     const { data: profiles, error } = await supabase
       .from('profiles')
-      .select('user_id, full_name, nickname, avatar_url, profession, specialization, bio');
+      .select('user_id, full_name, nickname, avatar_url, profession, specialization, bio')
+      .in('user_id', lawyerIds);
 
     if (error) {
       toast.error('Ошибка загрузки юристов');
@@ -88,9 +81,6 @@ export default function Lawyers() {
       setLoading(false);
       return;
     }
-
-    // Include all profiles that have a profession set
-    const allProfiles = (profiles || []).filter(p => p.profession);
 
     // Get ratings
     const { data: reviewData } = await supabase.from('reviews').select('lawyer_id, rating');
@@ -101,7 +91,7 @@ export default function Lawyers() {
       ratingMap[r.lawyer_id].count += 1;
     });
 
-    const result: LawyerProfile[] = allProfiles.map(p => ({
+    const result: LawyerProfile[] = (profiles || []).map(p => ({
       ...p,
       avg_rating: ratingMap[p.user_id] ? ratingMap[p.user_id].sum / ratingMap[p.user_id].count : 0,
       review_count: ratingMap[p.user_id]?.count || 0,
@@ -113,28 +103,14 @@ export default function Lawyers() {
   };
 
   const filteredLawyers = useMemo(() => {
+    if (!searchQuery) return lawyers;
+    const q = searchQuery.toLowerCase();
     return lawyers.filter(l => {
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        const name = (l.full_name || '').toLowerCase();
-        const nick = (l.nickname || '').toLowerCase();
-        if (!name.includes(q) && !nick.includes(q)) return false;
-      }
-      if (specFilter !== 'Все') {
-        if (!l.specialization?.some(s => s.includes(specFilter))) return false;
-      }
-      if (profFilter !== 'all') {
-        if (profFilter === 'non_lawyer') {
-          if (l.profession !== 'non_lawyer') return false;
-        } else {
-          if (!l.profession?.toLowerCase().includes(profFilter)) return false;
-        }
-      }
-      const minRating = parseFloat(ratingFilter);
-      if (minRating > 0 && l.avg_rating < minRating) return false;
-      return true;
+      const name = (l.full_name || '').toLowerCase();
+      const nick = (l.nickname || '').toLowerCase();
+      return name.includes(q) || nick.includes(q);
     });
-  }, [lawyers, searchQuery, specFilter, profFilter, ratingFilter]);
+  }, [lawyers, searchQuery]);
 
   const openLawyerProfile = async (lawyer: LawyerProfile) => {
     setSelectedLawyer(lawyer);
@@ -145,7 +121,6 @@ export default function Lawyers() {
       .eq('lawyer_id', lawyer.user_id)
       .order('created_at', { ascending: false });
 
-    // Get client names
     const clientIds = (data || []).map((r: any) => r.client_id);
     let clientMap: Record<string, string> = {};
     if (clientIds.length > 0) {
@@ -194,75 +169,44 @@ export default function Lawyers() {
     navigate(`/chat?to=${lawyerId}`);
   };
 
-  const renderStars = (rating: number, interactive = false, onSelect?: (r: number) => void) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map(i => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${i <= Math.round(rating) ? 'text-secondary fill-secondary' : 'text-muted-foreground/30'} ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
-            onClick={() => interactive && onSelect?.(i)}
-          />
-        ))}
-      </div>
-    );
+  const getProfessionLabel = (profession: string | null) => {
+    if (!profession) return 'Юрист';
+    const lower = profession.toLowerCase();
+    if (lower.includes('адвокат') || lower === 'advocate') return 'Адвокат';
+    return 'Юрист';
   };
+
+  const renderStars = (rating: number, interactive = false, onSelect?: (r: number) => void) => (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star
+          key={i}
+          className={`h-4 w-4 ${i <= Math.round(rating) ? 'text-secondary fill-secondary' : 'text-muted-foreground/30'} ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+          onClick={() => interactive && onSelect?.(i)}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1 container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <Users className="h-7 w-7 text-secondary" />
             <h1 className="text-2xl font-serif font-bold text-foreground">Юристы</h1>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-col gap-2 mb-6">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Поиск по имени или никнейму..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={specFilter} onValueChange={setSpecFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SPECIALIZATIONS.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Select value={profFilter} onValueChange={setProfFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROFESSIONS.map(p => (
-                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RATING_OPTIONS.map(r => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск по имени..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
 
           {loading ? (
@@ -274,48 +218,47 @@ export default function Lawyers() {
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-40" />
                 <p className="text-lg font-medium">Юристы не найдены</p>
-                <p className="text-sm mt-1">Попробуйте изменить параметры поиска</p>
+                <p className="text-sm mt-1">Попробуйте изменить запрос</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredLawyers.map(lawyer => (
-                <Card key={lawyer.user_id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openLawyerProfile(lawyer)}>
-                  <CardContent className="p-4 sm:p-5">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-12 w-12 shrink-0">
-                        <AvatarImage src={lawyer.avatar_url || ''} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                          {(lawyer.full_name || lawyer.nickname || '?')[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                          <div>
-                            <p className="font-semibold text-foreground">{lawyer.full_name || lawyer.nickname || 'Без имени'}</p>
-                            {lawyer.nickname && lawyer.full_name && (
-                              <p className="text-xs text-muted-foreground">@{lawyer.nickname}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {renderStars(lawyer.avg_rating)}
-                            <span className="text-xs text-muted-foreground">
-                              {lawyer.avg_rating > 0 ? lawyer.avg_rating.toFixed(1) : '—'} ({lawyer.review_count})
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">{lawyer.profession}</p>
-                        {lawyer.specialization && lawyer.specialization.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {lawyer.specialization.map(s => (
-                              <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-                            ))}
-                          </div>
-                        )}
-                        {lawyer.bio && (
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{lawyer.bio}</p>
-                        )}
+                <Card
+                  key={lawyer.user_id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => openLawyerProfile(lawyer)}
+                >
+                  <CardContent className="p-5 flex flex-col items-center text-center gap-3">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={lawyer.avatar_url || ''} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                        {(lawyer.full_name || lawyer.nickname || '?')[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate">
+                        {lawyer.full_name || lawyer.nickname || 'Без имени'}
+                      </p>
+                      {lawyer.nickname && (
+                        <p className="text-xs text-muted-foreground">@{lawyer.nickname}</p>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {getProfessionLabel(lawyer.profession)}
+                    </Badge>
+                    {lawyer.specialization && lawyer.specialization.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-1">
+                        {lawyer.specialization.slice(0, 3).map(s => (
+                          <Badge key={s} variant="outline" className="text-xs">{s}</Badge>
+                        ))}
                       </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      {renderStars(lawyer.avg_rating)}
+                      <span className="text-xs text-muted-foreground">
+                        {lawyer.avg_rating > 0 ? lawyer.avg_rating.toFixed(1) : '—'}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -341,7 +284,9 @@ export default function Lawyers() {
                   </Avatar>
                   <div>
                     <p>{selectedLawyer.full_name || selectedLawyer.nickname}</p>
-                    <p className="text-sm font-normal text-muted-foreground">{selectedLawyer.profession}</p>
+                    <p className="text-sm font-normal text-muted-foreground">
+                      @{selectedLawyer.nickname} · {getProfessionLabel(selectedLawyer.profession)}
+                    </p>
                   </div>
                 </DialogTitle>
                 <DialogDescription>
@@ -350,7 +295,6 @@ export default function Lawyers() {
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Rating summary */}
                 <div className="flex items-center gap-3">
                   {renderStars(selectedLawyer.avg_rating)}
                   <span className="text-sm text-muted-foreground">
@@ -358,7 +302,6 @@ export default function Lawyers() {
                   </span>
                 </div>
 
-                {/* Specializations */}
                 {selectedLawyer.specialization && selectedLawyer.specialization.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {selectedLawyer.specialization.map(s => (
@@ -367,7 +310,6 @@ export default function Lawyers() {
                   </div>
                 )}
 
-                {/* Action buttons */}
                 <div className="flex gap-2">
                   <Button onClick={() => startChat(selectedLawyer.user_id)} className="gap-2">
                     <MessageCircle className="h-4 w-4" /> Написать
@@ -377,7 +319,6 @@ export default function Lawyers() {
                   </Button>
                 </div>
 
-                {/* Review form */}
                 {showReviewForm && (
                   <Card>
                     <CardContent className="p-4 space-y-3">
@@ -399,7 +340,6 @@ export default function Lawyers() {
                   </Card>
                 )}
 
-                {/* Reviews list */}
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Отзывы</h3>
                   {reviewsLoading ? (
