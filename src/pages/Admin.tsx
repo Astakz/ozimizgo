@@ -310,7 +310,77 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="documents">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Все документы</CardTitle>
+                <CardDescription>{documents.length} документов создано</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingDocs ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : documents.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Нет документов</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Файл</TableHead>
+                        <TableHead>Пользователь</TableHead>
+                        <TableHead>Тип</TableHead>
+                        <TableHead>Дата</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {documents.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium max-w-[200px] truncate">{doc.original_filename}</TableCell>
+                          <TableCell className="text-sm">{getUserEmail(doc.user_id)}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{doc.file_type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(doc.created_at).toLocaleDateString('ru-RU')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => { setSelectedDoc(doc); setViewType('objection'); }}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => deleteDocument(doc.id)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Document preview dialog */}
+        <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-lg">{selectedDoc?.original_filename}</DialogTitle>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm" variant={viewType === 'objection' ? 'default' : 'outline'} onClick={() => setViewType('objection')}>Возражение</Button>
+                <Button size="sm" variant={viewType === 'text' ? 'default' : 'outline'} onClick={() => setViewType('text')}>Извлечённый текст</Button>
+              </div>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh]">
+              <pre className="whitespace-pre-wrap text-sm p-4 bg-muted rounded-md">
+                {viewType === 'objection' ? selectedDoc?.generated_objection : selectedDoc?.extracted_text}
+              </pre>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
