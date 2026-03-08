@@ -78,12 +78,14 @@ export function Header() {
 
           {/* Mobile hamburger */}
           {user && isMobile && (
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-primary-foreground">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Sheet open={open} onOpenChange={setOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-primary-foreground">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-72 navy-gradient border-border/20">
                 <SheetHeader>
                   <SheetTitle className="text-primary-foreground flex items-center gap-2">
