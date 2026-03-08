@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Plus, Loader2, MessageSquare, Star, MessageCircle, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Briefcase, Plus, Loader2, MessageSquare, Star, MessageCircle, Trash2, Shield, Eye, FileText, MessageSquarePlus, FileEdit } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +41,8 @@ interface LawyerResponseProfile {
   specialization?: string[];
   avg_rating: number;
   review_count: number;
+  permissions: string[];
+  actionLogs: { action_type: string; performed_at: string }[];
 }
 
 const CASE_TYPES = [
@@ -59,8 +62,15 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   closed: { label: 'Закрыто', color: 'bg-muted text-muted-foreground' },
 };
 
+const PERMISSION_TYPES = [
+  { value: 'view_profile', label: 'Просмотр профиля', icon: Eye },
+  { value: 'create_consultation', label: 'Консультация', icon: MessageSquarePlus },
+  { value: 'add_comment', label: 'Комментарии', icon: MessageSquare },
+  { value: 'create_document', label: 'Документы', icon: FileEdit },
+];
+
 export default function Cases() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +85,7 @@ export default function Cases() {
   const [responseText, setResponseText] = useState('');
   const [respondingCase, setRespondingCase] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [permissionsLoading, setPermissionsLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchCases();
@@ -156,11 +167,15 @@ export default function Cases() {
     const lawyerIds = [...new Set((data || []).map((r: any) => r.lawyer_id))];
     let profileMap: Record<string, any> = {};
     let ratingMap: Record<string, { sum: number; count: number }> = {};
+    let permissionsMap: Record<string, string[]> = {};
+    let actionLogsMap: Record<string, { action_type: string; performed_at: string }[]> = {};
 
     if (lawyerIds.length > 0) {
-      const [profilesRes, reviewsRes] = await Promise.all([
+      const [profilesRes, reviewsRes, permissionsRes, logsRes] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name, nickname, avatar_url, profession, specialization').in('user_id', lawyerIds),
         supabase.from('reviews').select('lawyer_id, rating').in('lawyer_id', lawyerIds),
+        supabase.from('lawyer_case_permissions').select('*').eq('case_id', c.id).in('lawyer_id', lawyerIds),
+        supabase.from('lawyer_action_logs').select('*').eq('case_id', c.id).in('lawyer_id', lawyerIds),
       ]);
 
       (profilesRes.data || []).forEach((p: any) => { profileMap[p.user_id] = p; });
@@ -168,6 +183,14 @@ export default function Cases() {
         if (!ratingMap[r.lawyer_id]) ratingMap[r.lawyer_id] = { sum: 0, count: 0 };
         ratingMap[r.lawyer_id].sum += r.rating;
         ratingMap[r.lawyer_id].count += 1;
+      });
+      (permissionsRes.data || []).forEach((p: any) => {
+        if (!permissionsMap[p.lawyer_id]) permissionsMap[p.lawyer_id] = [];
+        permissionsMap[p.lawyer_id].push(p.permission_type);
+      });
+      (logsRes.data || []).forEach((l: any) => {
+        if (!actionLogsMap[l.lawyer_id]) actionLogsMap[l.lawyer_id] = [];
+        actionLogsMap[l.lawyer_id].push({ action_type: l.action_type, performed_at: l.performed_at });
       });
     }
 
@@ -183,6 +206,8 @@ export default function Cases() {
         specialization: p.specialization || null,
         avg_rating: rt ? rt.sum / rt.count : 0,
         review_count: rt?.count || 0,
+        permissions: permissionsMap[r.lawyer_id] || [],
+        actionLogs: actionLogsMap[r.lawyer_id] || [],
       };
     }));
     setResponsesLoading(false);
@@ -201,7 +226,6 @@ export default function Cases() {
     } else {
       toast.success('Отклик отправлен — приватный чат создан');
       setResponseText('');
-      // Navigate to chat with client
       navigate(`/chat?to=${selectedCase.client_id}`);
     }
     setRespondingCase(false);
@@ -213,7 +237,6 @@ export default function Cases() {
 
   const deleteCase = async (caseId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Delete responses first, then the case
     await supabase.from('case_responses').delete().eq('case_id', caseId);
     const { error } = await supabase.from('cases').delete().eq('id', caseId);
     if (error) {
@@ -222,6 +245,71 @@ export default function Cases() {
       toast.success('Дело удалено');
       setCases(prev => prev.filter(c => c.id !== caseId));
       if (selectedCase?.id === caseId) setSelectedCase(null);
+    }
+  };
+
+  const togglePermission = async (lawyerId: string, permissionType: string, hasPermission: boolean) => {
+    if (!selectedCase || !user) return;
+    const key = `${lawyerId}-${permissionType}`;
+    setPermissionsLoading(prev => ({ ...prev, [key]: true }));
+
+    try {
+      if (hasPermission) {
+        await supabase.from('lawyer_case_permissions')
+          .delete()
+          .eq('case_id', selectedCase.id)
+          .eq('lawyer_id', lawyerId)
+          .eq('permission_type', permissionType);
+      } else {
+        await supabase.from('lawyer_case_permissions').insert({
+          case_id: selectedCase.id,
+          lawyer_id: lawyerId,
+          permission_type: permissionType,
+          granted_by: user.id,
+        });
+      }
+
+      setResponses(prev => prev.map(r => {
+        if (r.lawyer_id === lawyerId) {
+          return {
+            ...r,
+            permissions: hasPermission
+              ? r.permissions.filter(p => p !== permissionType)
+              : [...r.permissions, permissionType],
+          };
+        }
+        return r;
+      }));
+      toast.success(hasPermission ? 'Разрешение снято' : 'Разрешение выдано');
+    } catch (err) {
+      toast.error('Ошибка изменения разрешений');
+    }
+
+    setPermissionsLoading(prev => ({ ...prev, [key]: false }));
+  };
+
+  const canPerformAction = (r: LawyerResponseProfile, actionType: string) => {
+    if (!r.permissions.includes(actionType)) return false;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const usedThisMonth = r.actionLogs.some(
+      log => log.action_type === actionType && new Date(log.performed_at) >= startOfMonth
+    );
+    return !usedThisMonth;
+  };
+
+  const performLawyerAction = async (actionType: string) => {
+    if (!user || !selectedCase) return;
+    const { error } = await supabase.from('lawyer_action_logs').insert({
+      lawyer_id: user.id,
+      case_id: selectedCase.id,
+      action_type: actionType,
+    });
+    if (error) {
+      toast.error('Ошибка выполнения действия');
+    } else {
+      toast.success('Действие выполнено');
+      openCase(selectedCase);
     }
   };
 
@@ -238,6 +326,7 @@ export default function Cases() {
 
   const isClientOfCase = selectedCase && user && selectedCase.client_id === user.id;
   const isLawyer = responses.some(r => r.lawyer_id === user?.id);
+  const currentLawyerResponse = responses.find(r => r.lawyer_id === user?.id);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -363,7 +452,7 @@ export default function Cases() {
         </DialogContent>
       </Dialog>
 
-      {/* Case detail dialog with lawyer profiles */}
+      {/* Case detail dialog with lawyer profiles and permissions */}
       <Dialog open={!!selectedCase} onOpenChange={open => { if (!open) setSelectedCase(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedCase && (
@@ -377,6 +466,38 @@ export default function Cases() {
 
               <div className="space-y-4">
                 <p className="text-sm text-foreground whitespace-pre-wrap">{selectedCase.description}</p>
+
+                {/* Lawyer actions panel - for lawyers who have responded */}
+                {currentLawyerResponse && (
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-primary" /> Ваши доступные действия
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PERMISSION_TYPES.map(perm => {
+                        const hasPermission = currentLawyerResponse.permissions.includes(perm.value);
+                        const canDo = canPerformAction(currentLawyerResponse, perm.value);
+                        const Icon = perm.icon;
+                        return (
+                          <Button
+                            key={perm.value}
+                            variant={canDo ? "default" : "outline"}
+                            size="sm"
+                            disabled={!canDo}
+                            onClick={() => performLawyerAction(perm.value)}
+                            className="justify-start gap-2 text-xs h-auto py-2"
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            <span className="truncate">{perm.label}</span>
+                            {!hasPermission && <span className="text-[10px] text-muted-foreground ml-auto">(нет)</span>}
+                            {hasPermission && !canDo && <span className="text-[10px] text-muted-foreground ml-auto">(исп.)</span>}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Каждое действие доступно 1 раз в месяц</p>
+                  </div>
+                )}
 
                 <div className="border-t pt-4">
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -425,11 +546,54 @@ export default function Cases() {
 
                                 <p className="text-sm mt-2">{r.message}</p>
 
+                                {/* Permissions display */}
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {PERMISSION_TYPES.map(perm => {
+                                    const has = r.permissions.includes(perm.value);
+                                    const Icon = perm.icon;
+                                    return (
+                                      <Badge
+                                        key={perm.value}
+                                        variant={has ? "default" : "outline"}
+                                        className={`text-[10px] gap-1 ${!has ? 'opacity-40' : ''}`}
+                                      >
+                                        <Icon className="h-2.5 w-2.5" />
+                                        {perm.label.split(' ')[0]}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Admin permission controls */}
+                                {isAdmin && (
+                                  <div className="mt-3 pt-3 border-t">
+                                    <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                                      <Shield className="h-3 w-3" /> Управление доступом (Админ)
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {PERMISSION_TYPES.map(perm => {
+                                        const has = r.permissions.includes(perm.value);
+                                        const loadingKey = `${r.lawyer_id}-${perm.value}`;
+                                        const isLoading = permissionsLoading[loadingKey];
+                                        return (
+                                          <div key={perm.value} className="flex items-center justify-between gap-2 text-xs">
+                                            <span className="truncate">{perm.label}</span>
+                                            <Switch
+                                              checked={has}
+                                              disabled={isLoading}
+                                              onCheckedChange={() => togglePermission(r.lawyer_id, perm.value, has)}
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
                                 <div className="flex items-center justify-between mt-2">
                                   <span className="text-xs text-muted-foreground">
                                     {new Date(r.created_at).toLocaleDateString('ru-RU')}
                                   </span>
-                                  {/* Client sees "Chat" button; lawyer sees their own response */}
                                   {isClientOfCase ? (
                                     <Button
                                       size="sm"

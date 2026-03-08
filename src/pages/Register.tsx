@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Loader2 } from 'lucide-react';
+import { UserPlus, Loader2, User, Scale } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Register = () => {
@@ -15,6 +16,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [role, setRole] = useState<'user' | 'lawyer'>('user');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -49,18 +51,23 @@ const Register = () => {
         email: email.trim(),
         password,
         options: {
-          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase() },
+          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase(), role },
         },
       });
 
       if (error) throw error;
 
-      // Mark invite code as used
+      // Mark invite code as used and set role
       if (signUpData.user) {
         await supabase.rpc('use_invite_code', {
           invite_code_value: inviteCode.trim().toUpperCase(),
           used_by_user_id: signUpData.user.id,
         });
+
+        // Update user_roles with selected role
+        if (role === 'lawyer') {
+          await supabase.from('user_roles').update({ role: 'lawyer' }).eq('user_id', signUpData.user.id);
+        }
       }
 
       toast({ title: 'Успешно!', description: 'Аккаунт создан. Добро пожаловать!' });
@@ -100,6 +107,33 @@ const Register = () => {
               <Label htmlFor="password">Пароль</Label>
               <Input id="password" type="password" placeholder="Минимум 6 символов" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
             </div>
+
+            <div className="space-y-3">
+              <Label>Тип аккаунта</Label>
+              <RadioGroup value={role} onValueChange={(v) => setRole(v as 'user' | 'lawyer')} className="grid grid-cols-2 gap-3">
+                <div>
+                  <RadioGroupItem value="user" id="role-user" className="peer sr-only" />
+                  <Label
+                    htmlFor="role-user"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    <User className="mb-2 h-6 w-6" />
+                    <span className="text-sm font-medium">Клиент</span>
+                  </Label>
+                </div>
+                <div>
+                  <RadioGroupItem value="lawyer" id="role-lawyer" className="peer sr-only" />
+                  <Label
+                    htmlFor="role-lawyer"
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    <Scale className="mb-2 h-6 w-6" />
+                    <span className="text-sm font-medium">Юрист / Адвокат</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="invite">Инвайт-код</Label>
               <Input

@@ -142,6 +142,73 @@ export type Database = {
         }
         Relationships: []
       }
+      lawyer_action_logs: {
+        Row: {
+          action_type: string
+          case_id: string
+          id: string
+          lawyer_id: string
+          performed_at: string
+        }
+        Insert: {
+          action_type: string
+          case_id: string
+          id?: string
+          lawyer_id: string
+          performed_at?: string
+        }
+        Update: {
+          action_type?: string
+          case_id?: string
+          id?: string
+          lawyer_id?: string
+          performed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_action_logs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_case_permissions: {
+        Row: {
+          case_id: string
+          granted_at: string
+          granted_by: string
+          id: string
+          lawyer_id: string
+          permission_type: string
+        }
+        Insert: {
+          case_id: string
+          granted_at?: string
+          granted_by: string
+          id?: string
+          lawyer_id: string
+          permission_type: string
+        }
+        Update: {
+          case_id?: string
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          lawyer_id?: string
+          permission_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_case_permissions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachments: Json | null
@@ -303,6 +370,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_lawyer_perform_action: {
+        Args: { _action_type: string; _case_id: string; _lawyer_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -320,7 +391,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "lawyer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -448,7 +519,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "lawyer"],
     },
   },
 } as const
