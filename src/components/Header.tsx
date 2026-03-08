@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle, PenTool } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 const fullAccessNavItems = [
   { to: '/', label: 'Возражение', icon: FileText },
+  { to: '/objection-generator', label: 'Возражение жасау', icon: PenTool },
   { to: '/profile', label: 'Профиль', icon: UserCircle },
   { to: '/history', label: 'История', icon: FileStack },
   { to: '/lawyers', label: 'Юристы', icon: Users },

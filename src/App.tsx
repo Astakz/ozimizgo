@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Lawyers from "./pages/Lawyers";
 import Cases from "./pages/Cases";
 import Chat from "./pages/Chat";
+import ObjectionGenerator from "./pages/ObjectionGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/lawyers" element={<ProtectedRoute><Lawyers /></ProtectedRoute>} />
             <Route path="/cases" element={<FullAccessRoute><Cases /></FullAccessRoute>} />
             <Route path="/chat" element={<FullAccessRoute><Chat /></FullAccessRoute>} />
+            <Route path="/objection-generator" element={<FullAccessRoute><ObjectionGenerator /></FullAccessRoute>} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
