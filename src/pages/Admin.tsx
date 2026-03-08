@@ -1,12 +1,12 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, FileText, Key, LogOut, Briefcase, Settings, PenTool } from 'lucide-react';
+import { Shield, Users, FileText, Key, LogOut, Settings, History } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminObjections from '@/components/admin/AdminObjections';
 import AdminInviteCodes from '@/components/admin/AdminInviteCodes';
-import AdminObjectionGenerator from '@/components/admin/AdminObjectionGenerator';
+import AdminHistory from '@/components/admin/AdminHistory';
 
 const Admin = () => {
   const { signOut } = useAuth();
@@ -34,15 +34,20 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
-            <TabsTrigger value="objections" className="gap-2"><FileText className="w-4 h-4" /> История</TabsTrigger>
+            <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" /> История</TabsTrigger>
+            <TabsTrigger value="objections" className="gap-2"><FileText className="w-4 h-4" /> Возражения</TabsTrigger>
             <TabsTrigger value="codes" className="gap-2"><Key className="w-4 h-4" /> Инвайт-коды</TabsTrigger>
             <TabsTrigger value="settings" className="gap-2"><Settings className="w-4 h-4" /> Настройки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
             <AdminUsers />
+          </TabsContent>
+
+          <TabsContent value="history">
+            <AdminHistory />
           </TabsContent>
 
           <TabsContent value="objections">
