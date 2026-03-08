@@ -8,7 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Plus, Trash2, Ban, Users, Key, LogOut, Loader2, Copy } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface InviteCode {
@@ -28,14 +30,28 @@ interface Profile {
   created_at: string;
 }
 
+interface Document {
+  id: string;
+  user_id: string;
+  original_filename: string;
+  file_type: string;
+  extracted_text: string;
+  generated_objection: string;
+  created_at: string;
+}
+
 const Admin = () => {
   const { signOut } = useAuth();
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [newCode, setNewCode] = useState('');
   const [loadingCodes, setLoadingCodes] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingDocs, setLoadingDocs] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [viewType, setViewType] = useState<'text' | 'objection'>('objection');
 
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
@@ -65,10 +81,25 @@ const Admin = () => {
     setLoadingUsers(false);
   }, []);
 
+  const fetchDocuments = useCallback(async () => {
+    setLoadingDocs(true);
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, user_id, original_filename, file_type, extracted_text, generated_objection, created_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      setDocuments(data || []);
+    }
+    setLoadingDocs(false);
+  }, []);
+
   useEffect(() => {
     fetchCodes();
     fetchUsers();
-  }, [fetchCodes, fetchUsers]);
+    fetchDocuments();
+  }, [fetchCodes, fetchUsers, fetchDocuments]);
 
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -120,6 +151,21 @@ const Admin = () => {
     toast({ title: 'Скопировано', description: code });
   };
 
+  const deleteDocument = async (id: string) => {
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Документ удалён' });
+      fetchDocuments();
+    }
+  };
+
+  const getUserEmail = (userId: string) => {
+    const u = users.find((p) => p.user_id === userId);
+    return u?.email || userId.slice(0, 8) + '...';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="navy-gradient text-primary-foreground py-4 shadow-elevated">
@@ -141,9 +187,10 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <Tabs defaultValue="codes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="codes" className="gap-2"><Key className="w-4 h-4" /> Инвайт-коды</TabsTrigger>
             <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
+            <TabsTrigger value="documents" className="gap-2"><FileStack className="w-4 h-4" /> Документы</TabsTrigger>
           </TabsList>
 
           <TabsContent value="codes" className="space-y-6">
@@ -263,7 +310,77 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="documents">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Все документы</CardTitle>
+                <CardDescription>{documents.length} документов создано</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingDocs ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : documents.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Нет документов</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Файл</TableHead>
+                        <TableHead>Пользователь</TableHead>
+                        <TableHead>Тип</TableHead>
+                        <TableHead>Дата</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {documents.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium max-w-[200px] truncate">{doc.original_filename}</TableCell>
+                          <TableCell className="text-sm">{getUserEmail(doc.user_id)}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{doc.file_type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {new Date(doc.created_at).toLocaleDateString('ru-RU')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => { setSelectedDoc(doc); setViewType('objection'); }}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => deleteDocument(doc.id)} className="text-destructive hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Document preview dialog */}
+        <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-lg">{selectedDoc?.original_filename}</DialogTitle>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm" variant={viewType === 'objection' ? 'default' : 'outline'} onClick={() => setViewType('objection')}>Возражение</Button>
+                <Button size="sm" variant={viewType === 'text' ? 'default' : 'outline'} onClick={() => setViewType('text')}>Извлечённый текст</Button>
+              </div>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh]">
+              <pre className="whitespace-pre-wrap text-sm p-4 bg-muted rounded-md">
+                {viewType === 'objection' ? selectedDoc?.generated_objection : selectedDoc?.extracted_text}
+              </pre>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
