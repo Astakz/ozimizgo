@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Plus, Loader2, MessageSquare, Star, MessageCircle } from 'lucide-react';
+import { Briefcase, Plus, Loader2, MessageSquare, Star, MessageCircle, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -210,6 +211,20 @@ export default function Cases() {
     navigate(`/chat?to=${userId}`);
   };
 
+  const deleteCase = async (caseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Delete responses first, then the case
+    await supabase.from('case_responses').delete().eq('case_id', caseId);
+    const { error } = await supabase.from('cases').delete().eq('id', caseId);
+    if (error) {
+      toast.error('Ошибка удаления дела');
+    } else {
+      toast.success('Дело удалено');
+      setCases(prev => prev.filter(c => c.id !== caseId));
+      if (selectedCase?.id === caseId) setSelectedCase(null);
+    }
+  };
+
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
@@ -285,9 +300,30 @@ export default function Cases() {
                           <span className="text-xs text-muted-foreground">от {c.client_name}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-muted-foreground shrink-0">
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="text-sm">{c.response_count}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {user && c.client_id === user.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={e => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить дело?</AlertDialogTitle>
+                                <AlertDialogDescription>Вы действительно хотите удалить это дело? Все отклики будут удалены.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={e => deleteCase(c.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Удалить</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MessageSquare className="h-4 w-4" />
+                          <span className="text-sm">{c.response_count}</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
