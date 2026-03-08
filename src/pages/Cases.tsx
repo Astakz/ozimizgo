@@ -211,6 +211,20 @@ export default function Cases() {
     navigate(`/chat?to=${userId}`);
   };
 
+  const deleteCase = async (caseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Delete responses first, then the case
+    await supabase.from('case_responses').delete().eq('case_id', caseId);
+    const { error } = await supabase.from('cases').delete().eq('id', caseId);
+    if (error) {
+      toast.error('Ошибка удаления дела');
+    } else {
+      toast.success('Дело удалено');
+      setCases(prev => prev.filter(c => c.id !== caseId));
+      if (selectedCase?.id === caseId) setSelectedCase(null);
+    }
+  };
+
   const renderStars = (rating: number) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
