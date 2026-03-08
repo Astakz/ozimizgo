@@ -1,4 +1,4 @@
-import { Scale, Shield, LogOut, Settings, FileStack } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -26,6 +26,9 @@ export function Header() {
           </div>
           {user && (
             <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/profile"><UserCircle className="w-4 h-4 mr-1" /> Профиль</Link>
+              </Button>
               <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Link to="/history"><FileStack className="w-4 h-4 mr-1" /> История</Link>
               </Button>
