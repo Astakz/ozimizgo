@@ -174,7 +174,7 @@ export default function History() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <Card key={doc.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-3">
