@@ -9,7 +9,6 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 const fullAccessNavItems = [
   { to: '/', label: 'Возражение', icon: FileText },
-  { to: '/objection-generator', label: 'Возражение жасау', icon: PenTool },
   { to: '/profile', label: 'Профиль', icon: UserCircle },
   { to: '/history', label: 'История', icon: FileStack },
   { to: '/lawyers', label: 'Юристы', icon: Users },
