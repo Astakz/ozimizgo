@@ -37,8 +37,8 @@ const Login = () => {
     } catch (err: any) {
       toast({
         title: 'Ошибка входа',
-        description: err.message === 'Invalid login credentials' 
-          ? 'Неверный email или пароль' 
+        description: err.message === 'Invalid login credentials'
+          ? 'Неверный email или пароль'
           : err.message || 'Попробуйте позже',
         variant: 'destructive',
       });
@@ -49,7 +49,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md shadow-elevated">
+      <Card className="w-full max-w-md shadow-elevated animate-fade-in">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 w-12 h-12 rounded-full bg-primary flex items-center justify-center">
             <LogIn className="w-6 h-6 text-primary-foreground" />
@@ -61,25 +61,11 @@ const Login = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="example@mail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
+              <Input id="email" type="email" placeholder="example@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Введите пароль"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
+              <Input id="password" type="password" placeholder="Введите пароль" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -87,9 +73,7 @@ const Login = () => {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Нет аккаунта?{' '}
-              <Link to="/register" className="text-primary underline-offset-4 hover:underline">
-                Регистрация
-              </Link>
+              <Link to="/register" className="text-primary underline-offset-4 hover:underline">Регистрация</Link>
             </p>
           </form>
         </CardContent>
