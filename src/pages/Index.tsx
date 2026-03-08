@@ -51,6 +51,7 @@ const Index = () => {
       }
 
       const parsed = extractNotarialData(text);
+      extractedTextRef.current = text;
       setParsedDocument(parsed);
       setCurrentData(parsed.extractedData);
 
