@@ -103,6 +103,18 @@ const Register = () => {
               <Input id="password" type="password" placeholder="Минимум 6 символов" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
             </div>
             <div className="space-y-2">
+              <Label>Профессия</Label>
+              <Select value={profession} onValueChange={setProfession} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите профессию" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Юрист">Юрист</SelectItem>
+                  <SelectItem value="Адвокат">Адвокат</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="invite">Инвайт-код</Label>
               <Input
                 id="invite"
