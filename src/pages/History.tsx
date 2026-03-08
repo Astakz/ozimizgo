@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, DownloadCloud } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, DownloadCloud, Search, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
 interface DocumentRecord {
@@ -32,6 +39,47 @@ export default function History() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadAllProgress, setDownloadAllProgress] = useState(0);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [fileTypeFilter, setFileTypeFilter] = useState<string>('all');
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      // Search by filename
+      if (searchQuery && !doc.original_filename.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      // Filter by file type
+      if (fileTypeFilter !== 'all' && doc.file_type !== fileTypeFilter) {
+        return false;
+      }
+      // Filter by date range
+      const docDate = new Date(doc.created_at);
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (docDate < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        if (docDate > to) return false;
+      }
+      return true;
+    });
+  }, [documents, searchQuery, dateFrom, dateTo, fileTypeFilter]);
+
+  const hasActiveFilters = searchQuery || dateFrom || dateTo || fileTypeFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setFileTypeFilter('all');
+  };
 
   useEffect(() => {
     if (user) fetchDocuments();
@@ -148,6 +196,74 @@ export default function History() {
             )}
           </div>
 
+          {/* Filters */}
+          {!loading && documents.length > 0 && (
+            <div className="mb-4 space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск по имени файла..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                {/* File type */}
+                <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
+                  <SelectTrigger className="w-full sm:w-[140px]">
+                    <SelectValue placeholder="Тип файла" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все типы</SelectItem>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                    <SelectItem value="image">Изображение</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                {/* Date from */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("gap-2 text-xs", !dateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {dateFrom ? format(dateFrom, 'dd.MM.yyyy', { locale: ru }) : 'Дата от'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+
+                {/* Date to */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("gap-2 text-xs", !dateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {dateTo ? format(dateTo, 'dd.MM.yyyy', { locale: ru }) : 'Дата до'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-xs text-muted-foreground">
+                    <X className="h-3.5 w-3.5" /> Сбросить
+                  </Button>
+                )}
+
+                <span className="text-xs text-muted-foreground ml-auto">
+                  Найдено: {filteredDocuments.length} из {documents.length}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Download all progress */}
           {downloadingAll && (
             <div className="mb-4 space-y-1">
@@ -168,9 +284,18 @@ export default function History() {
                 <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
               </CardContent>
             </Card>
+          ) : filteredDocuments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                <p className="text-lg font-medium">Ничего не найдено</p>
+                <p className="text-sm mt-1">Попробуйте изменить параметры поиска</p>
+                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">Сбросить фильтры</Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <Card key={doc.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-3 sm:p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
