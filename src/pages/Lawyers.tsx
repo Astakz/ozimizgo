@@ -116,15 +116,25 @@ export default function Lawyers() {
     return lawyers.filter(l => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const name = (l.full_name || l.nickname || '').toLowerCase();
-        if (!name.includes(q)) return false;
+        const name = (l.full_name || '').toLowerCase();
+        const nick = (l.nickname || '').toLowerCase();
+        if (!name.includes(q) && !nick.includes(q)) return false;
       }
       if (specFilter !== 'Все') {
         if (!l.specialization?.some(s => s.includes(specFilter))) return false;
       }
+      if (profFilter !== 'all') {
+        if (profFilter === 'non_lawyer') {
+          if (l.profession !== 'non_lawyer') return false;
+        } else {
+          if (!l.profession?.toLowerCase().includes(profFilter)) return false;
+        }
+      }
+      const minRating = parseFloat(ratingFilter);
+      if (minRating > 0 && l.avg_rating < minRating) return false;
       return true;
     });
-  }, [lawyers, searchQuery, specFilter]);
+  }, [lawyers, searchQuery, specFilter, profFilter, ratingFilter]);
 
   const openLawyerProfile = async (lawyer: LawyerProfile) => {
     setSelectedLawyer(lawyer);
