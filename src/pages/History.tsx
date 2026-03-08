@@ -191,6 +191,12 @@ export default function History() {
                         </Button>
                       </div>
                     </div>
+                    {downloading === doc.id && (
+                      <div className="mt-3 space-y-1">
+                        <Progress value={downloadProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-right">{downloadProgress}%</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
