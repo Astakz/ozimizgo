@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Camera, Save, User, Briefcase, Mail, FileText } from 'lucide-react';
+import { Camera, Save, User, Briefcase, Mail, FileText, Star, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPECIALIZATIONS = [
@@ -25,7 +25,6 @@ const SPECIALIZATIONS = [
 const PROFESSIONS = [
   { value: 'lawyer', label: 'Адвокат' },
   { value: 'jurist', label: 'Юрист' },
-  { value: 'non_lawyer', label: 'Не юрист' },
 ];
 
 export default function Profile() {
@@ -34,6 +33,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [userRole, setUserRole] = useState<string>('user');
 
   const [fullName, setFullName] = useState('');
   const [nickname, setNickname] = useState('');
@@ -42,10 +42,40 @@ export default function Profile() {
   const [profession, setProfession] = useState('');
   const [specialization, setSpecialization] = useState<string[]>([]);
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [experience, setExperience] = useState('');
+  const [rating, setRating] = useState<number | null>(null);
+
+  const isLawyer = userRole === 'lawyer';
 
   useEffect(() => {
-    if (user) loadProfile();
+    if (user) {
+      loadProfile();
+      loadRole();
+      loadRating();
+    }
   }, [user]);
+
+  const loadRole = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data) setUserRole(data.role);
+  };
+
+  const loadRating = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('lawyer_id', user.id);
+    if (data && data.length > 0) {
+      const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
+      setRating(Math.round(avg * 10) / 10);
+    }
+  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -63,6 +93,7 @@ export default function Profile() {
       setProfession(data.profession || '');
       setSpecialization((data.specialization as string[]) || []);
       setAvatarUrl(data.avatar_url || '');
+      setExperience((data as any).experience || '');
     }
     setLoading(false);
   };
@@ -134,7 +165,6 @@ export default function Profile() {
     }
     setSaving(true);
     try {
-      // Check uniqueness one more time
       if (nickname.trim()) {
         const { data: isUnique } = await supabase.rpc('is_nickname_unique', {
           check_nickname: nickname.trim(),
@@ -147,15 +177,21 @@ export default function Profile() {
         }
       }
 
+      const updateData: Record<string, any> = {
+        full_name: fullName,
+        nickname: nickname.trim(),
+      };
+
+      if (isLawyer) {
+        updateData.bio = bio;
+        updateData.profession = profession;
+        updateData.specialization = specialization;
+        updateData.experience = experience;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: fullName,
-          nickname: nickname.trim(),
-          bio,
-          profession,
-          specialization,
-        })
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -221,11 +257,22 @@ export default function Profile() {
                 {fullName || nickname || 'Пользователь'}
               </h2>
               <p className="text-sm text-muted-foreground truncate">{email}</p>
-              {profession && (
-                <Badge variant="secondary" className="mt-2">
-                  {PROFESSIONS.find(p => p.value === profession)?.label || profession}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {isLawyer && profession && (
+                  <Badge variant="secondary">
+                    {PROFESSIONS.find(p => p.value === profession)?.label || profession}
+                  </Badge>
+                )}
+                {isLawyer && rating !== null && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                    {rating}
+                  </Badge>
+                )}
+                {!isLawyer && (
+                  <Badge variant="secondary">Клиент</Badge>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -268,43 +315,68 @@ export default function Profile() {
               <Input value={email} disabled className="bg-muted" />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio" className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-muted-foreground" /> О себе
-              </Label>
-              <Textarea id="bio" value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о себе..." rows={3} />
-            </div>
+            {/* Lawyer-only fields */}
+            {isLawyer && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="bio" className="flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-muted-foreground" /> О себе
+                  </Label>
+                  <Textarea id="bio" value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о себе..." rows={3} />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Briefcase className="h-4 w-4 text-muted-foreground" /> Профессия
-              </Label>
-              <Select value={profession} onValueChange={setProfession}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите профессию" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROFESSIONS.map(p => (
-                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" /> Профессия
+                  </Label>
+                  <Select value={profession} onValueChange={setProfession}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите профессию" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROFESSIONS.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-3">
-              <Label>Специализация</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SPECIALIZATIONS.map(s => (
-                  <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={specialization.includes(s.id)}
-                      onCheckedChange={() => toggleSpecialization(s.id)}
-                    />
-                    <span className="text-sm text-foreground">{s.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="experience" className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-muted-foreground" /> Опыт работы
+                  </Label>
+                  <Input
+                    id="experience"
+                    value={experience}
+                    onChange={e => setExperience(e.target.value)}
+                    placeholder="Например: 5 лет"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Специализация</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SPECIALIZATIONS.map(s => (
+                      <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={specialization.includes(s.id)}
+                          onCheckedChange={() => toggleSpecialization(s.id)}
+                        />
+                        <span className="text-sm text-foreground">{s.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {rating !== null && (
+                  <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50">
+                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                    <span className="text-sm font-medium text-foreground">Рейтинг: {rating} / 5</span>
+                    <span className="text-xs text-muted-foreground">(на основе отзывов)</span>
+                  </div>
+                )}
+              </>
+            )}
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
               <Save className="h-4 w-4 mr-2" />
