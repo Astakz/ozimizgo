@@ -33,6 +33,22 @@ export default function History() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
   const [viewMode, setViewMode] = useState<'text' | 'objection' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      if (searchQuery && !doc.original_filename.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      const docDate = new Date(doc.created_at);
+      if (dateFrom && docDate < new Date(dateFrom.setHours(0, 0, 0, 0))) return false;
+      if (dateTo && docDate > new Date(new Date(dateTo).setHours(23, 59, 59, 999))) return false;
+      return true;
+    });
+  }, [documents, searchQuery, dateFrom, dateTo]);
+
+  const hasFilters = searchQuery || dateFrom || dateTo;
+  const clearFilters = () => { setSearchQuery(''); setDateFrom(undefined); setDateTo(undefined); };
 
   useEffect(() => {
     if (user) fetchDocuments();
