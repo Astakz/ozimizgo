@@ -162,11 +162,6 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nickname">Никнейм</Label>
-              <Input id="nickname" placeholder="ivan_law" value={nickname} onChange={(e) => setNickname(e.target.value)} disabled={loading} />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input id="email" type="email" placeholder="example@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
             </div>
