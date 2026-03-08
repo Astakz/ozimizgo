@@ -14,7 +14,6 @@ const fullAccessNavItems = [
   { to: '/lawyers', label: 'Юристы', icon: Users },
   { to: '/cases', label: 'Дела', icon: Briefcase },
   { to: '/chat', label: 'Чат', icon: MessageCircle },
-  { to: '/admin?tab=generator', label: 'Возражение жасау', icon: FileText },
 ];
 
 const limitedNavItems = [
