@@ -7,13 +7,18 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NotificationBell } from '@/components/NotificationBell';
 
-const navItems = [
+const fullAccessNavItems = [
   { to: '/', label: 'Возражение', icon: FileText },
   { to: '/profile', label: 'Профиль', icon: UserCircle },
   { to: '/history', label: 'История', icon: FileStack },
   { to: '/lawyers', label: 'Юристы', icon: Users },
   { to: '/cases', label: 'Дела', icon: Briefcase },
   { to: '/chat', label: 'Чат', icon: MessageCircle },
+];
+
+const limitedNavItems = [
+  { to: '/lawyers', label: 'Юристы', icon: Users },
+  { to: '/profile', label: 'Профиль', icon: UserCircle },
 ];
 
 const navLinkClass =
