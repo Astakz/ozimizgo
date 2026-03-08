@@ -33,10 +33,7 @@ export function Header() {
   const navItems = hasFullAccess ? fullAccessNavItems : limitedNavItems;
   const allItems = [
     ...navItems,
-    ...(isAdmin ? [
-      { to: '/admin?tab=generator', label: 'Возражение жасау', icon: FileText },
-      { to: '/admin', label: 'Админ', icon: Settings },
-    ] : []),
+    ...(isAdmin ? [{ to: '/admin', label: 'Админ', icon: Settings }] : []),
   ];
 
   const handleSignOut = () => {
