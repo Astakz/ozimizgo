@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Lawyers from "./pages/Lawyers";
 import Cases from "./pages/Cases";
 import Chat from "./pages/Chat";
+import ObjectionGenerator from "./pages/ObjectionGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
