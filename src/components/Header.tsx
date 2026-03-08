@@ -26,6 +26,9 @@ export function Header() {
           </div>
           {user && (
             <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/history"><FileStack className="w-4 h-4 mr-1" /> История</Link>
+              </Button>
               {isAdmin && (
                 <Button asChild variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
                   <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> Админ</Link>
