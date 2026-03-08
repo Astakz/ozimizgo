@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FileText, Menu, Users, Briefcase, MessageCircle, PenTool } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
