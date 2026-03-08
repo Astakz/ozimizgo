@@ -244,8 +244,18 @@ export default function Profile() {
                 <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Иван Иванов" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nickname">Никнейм</Label>
-                <Input id="nickname" value={nickname} onChange={e => setNickname(e.target.value)} placeholder="ivan_law" />
+                <Label htmlFor="nickname">Имя пользователя</Label>
+                <Input
+                  id="nickname"
+                  value={nickname}
+                  onChange={e => {
+                    setNickname(e.target.value);
+                    setNicknameError('');
+                  }}
+                  onBlur={() => checkNicknameUnique(nickname)}
+                  placeholder="User12345"
+                />
+                {nicknameError && <p className="text-sm text-destructive">{nicknameError}</p>}
               </div>
             </div>
 

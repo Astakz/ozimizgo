@@ -102,7 +102,7 @@ const Register = () => {
         }
       }
 
-      toast({ title: 'Успешно!', description: 'Аккаунт создан. Добро пожаловать!' });
+      toast({ title: 'Успешно!', description: 'Аккаунт создан. Имя пользователя сгенерировано автоматически — вы можете изменить его в профиле.' });
       navigate(isLawyer ? '/' : '/lawyers');
     } catch (err: any) {
       toast({
