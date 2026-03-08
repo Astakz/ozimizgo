@@ -43,7 +43,7 @@ export default function History() {
       toast.error('Ошибка загрузки истории');
       console.error(error);
     } else {
-      setDocuments((data || []) as DocumentRecord[]);
+      setDocuments((data || []) as unknown as DocumentRecord[]);
     }
     setLoading(false);
   };
