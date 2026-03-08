@@ -112,16 +112,64 @@ export default function History() {
             <h2 className="text-2xl font-serif font-bold text-foreground">История документов</h2>
           </div>
 
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по имени файла..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("justify-start text-left font-normal w-full sm:w-[180px]", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, 'dd.MM.yyyy') : 'От даты'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ru} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("justify-start text-left font-normal w-full sm:w-[180px]", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, 'dd.MM.yyyy') : 'До даты'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ru} initialFocus className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+            {hasFilters && (
+              <Button variant="ghost" size="icon" onClick={clearFilters} title="Сбросить фильтры">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : documents.length === 0 ? (
+          ) : filteredDocuments.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <FileStack className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p className="text-lg font-medium">Нет сохранённых документов</p>
-                <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
+                {hasFilters ? (
+                  <>
+                    <p className="text-lg font-medium">Ничего не найдено</p>
+                    <p className="text-sm mt-1">Попробуйте изменить параметры поиска</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium">Нет сохранённых документов</p>
+                    <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           ) : (
