@@ -118,6 +118,7 @@ export function Header() {
                 </nav>
               </SheetContent>
             </Sheet>
+            </div>
           )}
         </div>
       </div>
