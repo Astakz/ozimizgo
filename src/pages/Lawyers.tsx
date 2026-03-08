@@ -78,7 +78,6 @@ export default function Lawyers() {
 
   const fetchLawyers = async () => {
     setLoading(true);
-    // Get all profiles with profession containing "юрист" or "адвокат"
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('user_id, full_name, nickname, avatar_url, profession, specialization, bio');
@@ -90,9 +89,8 @@ export default function Lawyers() {
       return;
     }
 
-    const lawyerProfiles = (profiles || []).filter(p =>
-      p.profession && ['адвокат', 'юрист'].some(t => p.profession!.toLowerCase().includes(t))
-    );
+    // Include all profiles that have a profession set
+    const allProfiles = (profiles || []).filter(p => p.profession);
 
     // Get ratings
     const { data: reviewData } = await supabase.from('reviews').select('lawyer_id, rating');
