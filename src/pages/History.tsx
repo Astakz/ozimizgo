@@ -8,9 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateObjectionDocument } from '@/utils/generateObjection';
-import { generatePDF } from '@/utils/pdfDocumentGenerator';
-import type { NotarialData } from '@/types/notarial';
+import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
 interface DocumentRecord {
   id: string;
