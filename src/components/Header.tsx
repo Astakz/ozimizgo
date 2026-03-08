@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const navItems = [
   { to: '/', label: 'Возражение', icon: FileText },
@@ -62,10 +63,11 @@ export function Header() {
                   {item.label}
                 </NavLink>
               ))}
+              <NotificationBell />
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 ml-2"
+                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 ml-1"
                 onClick={signOut}
               >
                 <LogOut className="h-4 w-4 mr-1" />
@@ -76,12 +78,14 @@ export function Header() {
 
           {/* Mobile hamburger */}
           {user && isMobile && (
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-primary-foreground">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Sheet open={open} onOpenChange={setOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-primary-foreground">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-72 navy-gradient border-border/20">
                 <SheetHeader>
                   <SheetTitle className="text-primary-foreground flex items-center gap-2">
@@ -114,6 +118,7 @@ export function Header() {
                 </nav>
               </SheetContent>
             </Sheet>
+            </div>
           )}
         </div>
       </div>
