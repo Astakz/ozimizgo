@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, DownloadCloud } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, DownloadCloud, Search, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
 interface DocumentRecord {
@@ -32,6 +39,47 @@ export default function History() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadAllProgress, setDownloadAllProgress] = useState(0);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [fileTypeFilter, setFileTypeFilter] = useState<string>('all');
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      // Search by filename
+      if (searchQuery && !doc.original_filename.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      // Filter by file type
+      if (fileTypeFilter !== 'all' && doc.file_type !== fileTypeFilter) {
+        return false;
+      }
+      // Filter by date range
+      const docDate = new Date(doc.created_at);
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (docDate < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        if (docDate > to) return false;
+      }
+      return true;
+    });
+  }, [documents, searchQuery, dateFrom, dateTo, fileTypeFilter]);
+
+  const hasActiveFilters = searchQuery || dateFrom || dateTo || fileTypeFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setFileTypeFilter('all');
+  };
 
   useEffect(() => {
     if (user) fetchDocuments();
