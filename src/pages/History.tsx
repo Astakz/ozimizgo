@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { FileText, Image, Trash2, Download, Eye, Loader2, FileStack, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateSelectablePDF } from '@/utils/pdfDocumentGenerator';
 
@@ -27,7 +28,8 @@ export default function History() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
   const [viewMode, setViewMode] = useState<'text' | 'objection' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   useEffect(() => {
     if (user) fetchDocuments();
   }, [user]);
@@ -62,11 +64,22 @@ export default function History() {
 
   const handleDownloadPDF = async (doc: DocumentRecord) => {
     try {
+      setDownloading(doc.id);
+      setDownloadProgress(10);
+      await new Promise(r => setTimeout(r, 200));
+      setDownloadProgress(40);
+      await new Promise(r => setTimeout(r, 200));
+      setDownloadProgress(70);
       await generateSelectablePDF(doc.generated_objection, null);
+      setDownloadProgress(100);
+      await new Promise(r => setTimeout(r, 500));
       toast.success('PDF скачан');
     } catch (e) {
       console.error(e);
       toast.error('Ошибка генерации PDF');
+    } finally {
+      setDownloading(null);
+      setDownloadProgress(0);
     }
   };
 
@@ -153,9 +166,14 @@ export default function History() {
                           size="icon"
                           className="h-8 w-8"
                           title="Скачать PDF"
+                          disabled={downloading === doc.id}
                           onClick={() => handleDownloadPDF(doc)}
                         >
-                          <Download className="h-4 w-4" />
+                          {downloading === doc.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
@@ -173,6 +191,12 @@ export default function History() {
                         </Button>
                       </div>
                     </div>
+                    {downloading === doc.id && (
+                      <div className="mt-3 space-y-1">
+                        <Progress value={downloadProgress} className="h-2" />
+                        <p className="text-xs text-muted-foreground text-right">{downloadProgress}%</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
