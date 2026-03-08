@@ -255,7 +255,11 @@ export default function Profile() {
                   onBlur={() => checkNicknameUnique(nickname)}
                   placeholder="User12345"
                 />
-                {nicknameError && <p className="text-sm text-destructive">{nicknameError}</p>}
+                {nicknameError ? (
+                  <p className="text-sm text-destructive">{nicknameError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Должно быть уникальным. Другие пользователи увидят это имя.</p>
+                )}
               </div>
             </div>
 
