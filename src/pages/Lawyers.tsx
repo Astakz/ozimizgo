@@ -101,7 +101,7 @@ export default function Lawyers() {
       ratingMap[r.lawyer_id].count += 1;
     });
 
-    const result: LawyerProfile[] = lawyerProfiles.map(p => ({
+    const result: LawyerProfile[] = allProfiles.map(p => ({
       ...p,
       avg_rating: ratingMap[p.user_id] ? ratingMap[p.user_id].sum / ratingMap[p.user_id].count : 0,
       review_count: ratingMap[p.user_id]?.count || 0,
