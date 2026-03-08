@@ -12,6 +12,9 @@ import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Lawyers from "./pages/Lawyers";
+import Cases from "./pages/Cases";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
