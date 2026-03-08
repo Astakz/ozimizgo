@@ -187,9 +187,10 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <Tabs defaultValue="codes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="codes" className="gap-2"><Key className="w-4 h-4" /> Инвайт-коды</TabsTrigger>
             <TabsTrigger value="users" className="gap-2"><Users className="w-4 h-4" /> Пользователи</TabsTrigger>
+            <TabsTrigger value="documents" className="gap-2"><FileStack className="w-4 h-4" /> Документы</TabsTrigger>
           </TabsList>
 
           <TabsContent value="codes" className="space-y-6">
