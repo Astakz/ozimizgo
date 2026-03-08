@@ -50,7 +50,7 @@ const Register = () => {
         email: email.trim(),
         password,
         options: {
-          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase() },
+          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase(), profession },
         },
       });
 
