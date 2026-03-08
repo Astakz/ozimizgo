@@ -284,9 +284,18 @@ export default function History() {
                 <p className="text-sm mt-1">Загрузите документ на главной странице, и он появится здесь</p>
               </CardContent>
             </Card>
+          ) : filteredDocuments.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Search className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                <p className="text-lg font-medium">Ничего не найдено</p>
+                <p className="text-sm mt-1">Попробуйте изменить параметры поиска</p>
+                <Button variant="outline" size="sm" onClick={clearFilters} className="mt-3">Сбросить фильтры</Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <Card key={doc.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-3 sm:p-5">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
