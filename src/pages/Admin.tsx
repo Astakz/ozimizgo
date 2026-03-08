@@ -81,10 +81,25 @@ const Admin = () => {
     setLoadingUsers(false);
   }, []);
 
+  const fetchDocuments = useCallback(async () => {
+    setLoadingDocs(true);
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, user_id, original_filename, file_type, extracted_text, generated_objection, created_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      setDocuments(data || []);
+    }
+    setLoadingDocs(false);
+  }, []);
+
   useEffect(() => {
     fetchCodes();
     fetchUsers();
-  }, [fetchCodes, fetchUsers]);
+    fetchDocuments();
+  }, [fetchCodes, fetchUsers, fetchDocuments]);
 
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
