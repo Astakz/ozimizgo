@@ -64,11 +64,22 @@ export default function History() {
 
   const handleDownloadPDF = async (doc: DocumentRecord) => {
     try {
+      setDownloading(doc.id);
+      setDownloadProgress(10);
+      await new Promise(r => setTimeout(r, 200));
+      setDownloadProgress(40);
+      await new Promise(r => setTimeout(r, 200));
+      setDownloadProgress(70);
       await generateSelectablePDF(doc.generated_objection, null);
+      setDownloadProgress(100);
+      await new Promise(r => setTimeout(r, 500));
       toast.success('PDF скачан');
     } catch (e) {
       console.error(e);
       toast.error('Ошибка генерации PDF');
+    } finally {
+      setDownloading(null);
+      setDownloadProgress(0);
     }
   };
 
