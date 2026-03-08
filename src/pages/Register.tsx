@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,12 +16,13 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [profession, setProfession] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim() || !password.trim() || !inviteCode.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !inviteCode.trim() || !profession) {
       toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
       return;
     }
@@ -49,7 +51,7 @@ const Register = () => {
         email: email.trim(),
         password,
         options: {
-          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase() },
+          data: { name: name.trim(), invite_code: inviteCode.trim().toUpperCase(), profession },
         },
       });
 
@@ -99,6 +101,18 @@ const Register = () => {
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
               <Input id="password" type="password" placeholder="Минимум 6 символов" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
+            </div>
+            <div className="space-y-2">
+              <Label>Профессия</Label>
+              <Select value={profession} onValueChange={setProfession} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите профессию" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Юрист">Юрист</SelectItem>
+                  <SelectItem value="Адвокат">Адвокат</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="invite">Инвайт-код</Label>
