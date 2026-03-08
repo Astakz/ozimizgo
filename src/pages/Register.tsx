@@ -23,7 +23,6 @@ const SPECIALIZATIONS = [
 const Register = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -76,7 +75,6 @@ const Register = () => {
 
       const metaData: Record<string, string> = {
         name: name.trim(),
-        nickname: nickname.trim(),
         invite_code: isLawyer ? inviteCode.trim().toUpperCase() : '',
         role: isLawyer ? 'lawyer' : 'user',
         profession: isLawyer ? (profession === 'advocate' ? 'Адвокат' : 'Юрист') : '',
@@ -104,7 +102,7 @@ const Register = () => {
         }
       }
 
-      toast({ title: 'Успешно!', description: 'Аккаунт создан. Добро пожаловать!' });
+      toast({ title: 'Успешно!', description: 'Аккаунт создан. Имя пользователя сгенерировано автоматически — вы можете изменить его в профиле.' });
       navigate(isLawyer ? '/' : '/lawyers');
     } catch (err: any) {
       toast({
@@ -161,11 +159,6 @@ const Register = () => {
             <div className="space-y-2">
               <Label htmlFor="name">Имя и фамилия *</Label>
               <Input id="name" placeholder="Иванов Иван" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="nickname">Никнейм</Label>
-              <Input id="nickname" placeholder="ivan_law" value={nickname} onChange={(e) => setNickname(e.target.value)} disabled={loading} />
             </div>
 
             <div className="space-y-2">

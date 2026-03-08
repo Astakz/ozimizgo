@@ -374,11 +374,16 @@ export type Database = {
         Args: { _action_type: string; _case_id: string; _lawyer_id: string }
         Returns: boolean
       }
+      generate_unique_username: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_nickname_unique: {
+        Args: { check_nickname: string; exclude_user_id?: string }
         Returns: boolean
       }
       use_invite_code: {
