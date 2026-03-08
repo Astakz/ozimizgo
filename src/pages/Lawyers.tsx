@@ -62,6 +62,8 @@ export default function Lawyers() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [specFilter, setSpecFilter] = useState('Все');
+  const [profFilter, setProfFilter] = useState('all');
+  const [ratingFilter, setRatingFilter] = useState('0');
   const [selectedLawyer, setSelectedLawyer] = useState<LawyerProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
