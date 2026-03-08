@@ -50,9 +50,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => checkAdmin(session.user.id), 0);
+          setTimeout(() => checkUserAccess(session.user.id), 0);
         } else {
           setIsAdmin(false);
+          setHasFullAccess(false);
         }
         setLoading(false);
       }
