@@ -41,6 +41,20 @@ const SPECIALIZATIONS = [
   'Семейное право', 'Трудовое право', 'Налоговое право', 'Корпоративное право',
 ];
 
+const PROFESSIONS = [
+  { value: 'all', label: 'Все статусы' },
+  { value: 'адвокат', label: 'Адвокат' },
+  { value: 'юрист', label: 'Юрист' },
+  { value: 'non_lawyer', label: 'Не юрист' },
+];
+
+const RATING_OPTIONS = [
+  { value: '0', label: 'Любой рейтинг' },
+  { value: '3', label: '⭐ 3+' },
+  { value: '4', label: '⭐ 4+' },
+  { value: '4.5', label: '⭐ 4.5+' },
+];
+
 export default function Lawyers() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,6 +62,8 @@ export default function Lawyers() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [specFilter, setSpecFilter] = useState('Все');
+  const [profFilter, setProfFilter] = useState('all');
+  const [ratingFilter, setRatingFilter] = useState('0');
   const [selectedLawyer, setSelectedLawyer] = useState<LawyerProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -62,7 +78,6 @@ export default function Lawyers() {
 
   const fetchLawyers = async () => {
     setLoading(true);
-    // Get all profiles with profession containing "юрист" or "адвокат"
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('user_id, full_name, nickname, avatar_url, profession, specialization, bio');
@@ -74,9 +89,8 @@ export default function Lawyers() {
       return;
     }
 
-    const lawyerProfiles = (profiles || []).filter(p =>
-      p.profession && ['адвокат', 'юрист'].some(t => p.profession!.toLowerCase().includes(t))
-    );
+    // Include all profiles that have a profession set
+    const allProfiles = (profiles || []).filter(p => p.profession);
 
     // Get ratings
     const { data: reviewData } = await supabase.from('reviews').select('lawyer_id, rating');
@@ -87,7 +101,7 @@ export default function Lawyers() {
       ratingMap[r.lawyer_id].count += 1;
     });
 
-    const result: LawyerProfile[] = lawyerProfiles.map(p => ({
+    const result: LawyerProfile[] = allProfiles.map(p => ({
       ...p,
       avg_rating: ratingMap[p.user_id] ? ratingMap[p.user_id].sum / ratingMap[p.user_id].count : 0,
       review_count: ratingMap[p.user_id]?.count || 0,
@@ -102,15 +116,25 @@ export default function Lawyers() {
     return lawyers.filter(l => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const name = (l.full_name || l.nickname || '').toLowerCase();
-        if (!name.includes(q)) return false;
+        const name = (l.full_name || '').toLowerCase();
+        const nick = (l.nickname || '').toLowerCase();
+        if (!name.includes(q) && !nick.includes(q)) return false;
       }
       if (specFilter !== 'Все') {
         if (!l.specialization?.some(s => s.includes(specFilter))) return false;
       }
+      if (profFilter !== 'all') {
+        if (profFilter === 'non_lawyer') {
+          if (l.profession !== 'non_lawyer') return false;
+        } else {
+          if (!l.profession?.toLowerCase().includes(profFilter)) return false;
+        }
+      }
+      const minRating = parseFloat(ratingFilter);
+      if (minRating > 0 && l.avg_rating < minRating) return false;
       return true;
     });
-  }, [lawyers, searchQuery, specFilter]);
+  }, [lawyers, searchQuery, specFilter, profFilter, ratingFilter]);
 
   const openLawyerProfile = async (lawyer: LawyerProfile) => {
     setSelectedLawyer(lawyer);
@@ -195,26 +219,50 @@ export default function Lawyers() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Поиск по имени..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
+          <div className="flex flex-col gap-2 mb-6">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Поиск по имени или никнейму..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={specFilter} onValueChange={setSpecFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPECIALIZATIONS.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={specFilter} onValueChange={setSpecFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SPECIALIZATIONS.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select value={profFilter} onValueChange={setProfFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROFESSIONS.map(p => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RATING_OPTIONS.map(r => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {loading ? (
