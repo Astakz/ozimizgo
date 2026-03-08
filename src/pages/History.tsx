@@ -28,7 +28,8 @@ export default function History() {
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
   const [viewMode, setViewMode] = useState<'text' | 'objection' | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   useEffect(() => {
     if (user) fetchDocuments();
   }, [user]);
