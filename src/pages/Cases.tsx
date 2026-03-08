@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Plus, Loader2, MessageSquare, Clock, CheckCircle2 } from 'lucide-react';
+import { Briefcase, Plus, Loader2, MessageSquare, Star, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface CaseRecord {
   id: string;
@@ -25,13 +27,18 @@ interface CaseRecord {
   response_count?: number;
 }
 
-interface CaseResponse {
+interface LawyerResponseProfile {
   id: string;
   lawyer_id: string;
   message: string;
   created_at: string;
-  lawyer_name?: string;
-  lawyer_profession?: string;
+  full_name?: string;
+  nickname?: string;
+  avatar_url?: string;
+  profession?: string;
+  specialization?: string[];
+  avg_rating: number;
+  review_count: number;
 }
 
 const CASE_TYPES = [
@@ -53,6 +60,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 export default function Cases() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -61,7 +69,7 @@ export default function Cases() {
   const [description, setDescription] = useState('');
   const [caseType, setCaseType] = useState('civil');
   const [selectedCase, setSelectedCase] = useState<CaseRecord | null>(null);
-  const [responses, setResponses] = useState<CaseResponse[]>([]);
+  const [responses, setResponses] = useState<LawyerResponseProfile[]>([]);
   const [responsesLoading, setResponsesLoading] = useState(false);
   const [responseText, setResponseText] = useState('');
   const [respondingCase, setRespondingCase] = useState(false);
@@ -84,7 +92,6 @@ export default function Cases() {
       return;
     }
 
-    // Get client names and response counts
     const clientIds = [...new Set((data || []).map((c: any) => c.client_id))];
     let clientMap: Record<string, string> = {};
     if (clientIds.length > 0) {
@@ -125,7 +132,6 @@ export default function Cases() {
     });
     if (error) {
       toast.error('Ошибка создания дела');
-      console.error(error);
     } else {
       toast.success('Дело создано');
       setShowCreate(false);
@@ -147,25 +153,37 @@ export default function Cases() {
       .order('created_at', { ascending: true });
 
     const lawyerIds = [...new Set((data || []).map((r: any) => r.lawyer_id))];
-    let lawyerMap: Record<string, { name: string; profession: string }> = {};
+    let profileMap: Record<string, any> = {};
+    let ratingMap: Record<string, { sum: number; count: number }> = {};
+
     if (lawyerIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, nickname, profession')
-        .in('user_id', lawyerIds);
-      (profiles || []).forEach((p: any) => {
-        lawyerMap[p.user_id] = {
-          name: p.full_name || p.nickname || 'Аноним',
-          profession: p.profession || '',
-        };
+      const [profilesRes, reviewsRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name, nickname, avatar_url, profession, specialization').in('user_id', lawyerIds),
+        supabase.from('reviews').select('lawyer_id, rating').in('lawyer_id', lawyerIds),
+      ]);
+
+      (profilesRes.data || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+      (reviewsRes.data || []).forEach((r: any) => {
+        if (!ratingMap[r.lawyer_id]) ratingMap[r.lawyer_id] = { sum: 0, count: 0 };
+        ratingMap[r.lawyer_id].sum += r.rating;
+        ratingMap[r.lawyer_id].count += 1;
       });
     }
 
-    setResponses((data || []).map((r: any) => ({
-      ...r,
-      lawyer_name: lawyerMap[r.lawyer_id]?.name || 'Аноним',
-      lawyer_profession: lawyerMap[r.lawyer_id]?.profession || '',
-    })));
+    setResponses((data || []).map((r: any) => {
+      const p = profileMap[r.lawyer_id] || {};
+      const rt = ratingMap[r.lawyer_id];
+      return {
+        ...r,
+        full_name: p.full_name || null,
+        nickname: p.nickname || null,
+        avatar_url: p.avatar_url || null,
+        profession: p.profession || null,
+        specialization: p.specialization || null,
+        avg_rating: rt ? rt.sum / rt.count : 0,
+        review_count: rt?.count || 0,
+      };
+    }));
     setResponsesLoading(false);
   };
 
@@ -179,18 +197,32 @@ export default function Cases() {
     });
     if (error) {
       toast.error('Ошибка отправки отклика');
-      console.error(error);
     } else {
-      toast.success('Отклик отправлен');
+      toast.success('Отклик отправлен — приватный чат создан');
       setResponseText('');
-      openCase(selectedCase);
-      fetchCases();
+      // Navigate to chat with client
+      navigate(`/chat?to=${selectedCase.client_id}`);
     }
     setRespondingCase(false);
   };
 
+  const goToChat = (userId: string) => {
+    navigate(`/chat?to=${userId}`);
+  };
+
+  const renderStars = (rating: number) => (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star key={i} className={`h-3 w-3 ${i <= Math.round(rating) ? 'text-secondary fill-secondary' : 'text-muted-foreground/30'}`} />
+      ))}
+    </div>
+  );
+
   const filteredCases = typeFilter === 'all' ? cases : cases.filter(c => c.case_type === typeFilter);
   const getCaseTypeLabel = (t: string) => CASE_TYPES.find(ct => ct.value === t)?.label || t;
+
+  const isClientOfCase = selectedCase && user && selectedCase.client_id === user.id;
+  const isLawyer = responses.some(r => r.lawyer_id === user?.id);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -207,7 +239,6 @@ export default function Cases() {
             </Button>
           </div>
 
-          {/* Filter */}
           <div className="mb-4">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-full sm:w-[200px]">
@@ -279,9 +310,7 @@ export default function Cases() {
             <Input placeholder="Заголовок дела" value={title} onChange={e => setTitle(e.target.value)} />
             <Textarea placeholder="Подробное описание..." value={description} onChange={e => setDescription(e.target.value)} rows={5} />
             <Select value={caseType} onValueChange={setCaseType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CASE_TYPES.map(t => (
                   <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -298,7 +327,7 @@ export default function Cases() {
         </DialogContent>
       </Dialog>
 
-      {/* Case detail dialog */}
+      {/* Case detail dialog with lawyer profiles */}
       <Dialog open={!!selectedCase} onOpenChange={open => { if (!open) setSelectedCase(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedCase && (
@@ -325,38 +354,93 @@ export default function Cases() {
                   ) : (
                     <div className="space-y-3">
                       {responses.map(r => (
-                        <div key={r.id} className="border rounded-lg p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div>
-                              <span className="text-sm font-medium">{r.lawyer_name}</span>
-                              {r.lawyer_profession && (
-                                <span className="text-xs text-muted-foreground ml-2">{r.lawyer_profession}</span>
-                              )}
+                        <Card key={r.id} className="overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <Avatar className="h-10 w-10 shrink-0">
+                                <AvatarImage src={r.avatar_url || ''} />
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                  {(r.full_name || r.nickname || '?')[0]?.toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                  <div>
+                                    <p className="text-sm font-semibold">{r.full_name || r.nickname || 'Юрист'}</p>
+                                    {r.profession && (
+                                      <p className="text-xs text-muted-foreground">{r.profession}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {renderStars(r.avg_rating)}
+                                    <span className="text-xs text-muted-foreground">
+                                      {r.avg_rating > 0 ? r.avg_rating.toFixed(1) : '—'} ({r.review_count})
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {r.specialization && r.specialization.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {r.specialization.map(s => (
+                                      <Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0">{s}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <p className="text-sm mt-2">{r.message}</p>
+
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(r.created_at).toLocaleDateString('ru-RU')}
+                                  </span>
+                                  {/* Client sees "Chat" button; lawyer sees their own response */}
+                                  {isClientOfCase ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1.5 h-7 text-xs"
+                                      onClick={(e) => { e.stopPropagation(); goToChat(r.lawyer_id); }}
+                                    >
+                                      <MessageCircle className="h-3 w-3" /> Чат
+                                    </Button>
+                                  ) : r.lawyer_id === user?.id ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1.5 h-7 text-xs"
+                                      onClick={(e) => { e.stopPropagation(); goToChat(selectedCase.client_id); }}
+                                    >
+                                      <MessageCircle className="h-3 w-3" /> Чат с клиентом
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </div>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(r.created_at).toLocaleDateString('ru-RU')}
-                            </span>
-                          </div>
-                          <p className="text-sm mt-1">{r.message}</p>
-                        </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
 
-                  {/* Response form */}
-                  {selectedCase.status === 'open' && user && selectedCase.client_id !== user.id && (
-                    <div className="mt-4 space-y-2">
+                  {/* Response form for lawyers */}
+                  {selectedCase.status === 'open' && user && selectedCase.client_id !== user.id && !isLawyer && (
+                    <div className="mt-4 space-y-2 border rounded-lg p-3 bg-muted/30">
+                      <p className="text-sm font-medium">Откликнуться на дело</p>
                       <Textarea
-                        placeholder="Ваш отклик..."
+                        placeholder="Опишите как вы можете помочь..."
                         value={responseText}
                         onChange={e => setResponseText(e.target.value)}
                         rows={3}
                       />
-                      <Button onClick={submitResponse} disabled={respondingCase || !responseText.trim()} size="sm">
-                        {respondingCase && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                        Откликнуться
+                      <Button onClick={submitResponse} disabled={respondingCase || !responseText.trim()} size="sm" className="gap-1.5">
+                        {respondingCase && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Откликнуться и начать чат
                       </Button>
                     </div>
+                  )}
+
+                  {isLawyer && (
+                    <p className="text-xs text-muted-foreground mt-3">Вы уже откликнулись на это дело</p>
                   )}
                 </div>
               </div>
