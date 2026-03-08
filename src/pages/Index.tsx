@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { PDFUploader } from '@/components/PDFUploader';
@@ -7,20 +7,26 @@ import { ObjectionDocument } from '@/components/ObjectionDocument';
 import { extractTextFromPDF, extractNotarialData } from '@/utils/pdfParser';
 import { generateObjectionDocumentText } from '@/utils/generateObjection';
 import { extractTextFromImage } from '@/utils/imageOcr';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 function isImageFile(file: File): boolean {
   return /^image\/(jpeg|jpg|png)$/.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
 }
 
 const Index = () => {
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedDocument, setParsedDocument] = useState<ParsedDocument | null>(null);
   const [currentData, setCurrentData] = useState<NotarialData | null>(null);
   const [objectionText, setObjectionText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const extractedTextRef = useRef<string>('');
+  const fileInfoRef = useRef<{ name: string; type: string }>({ name: '', type: '' });
 
   const handleFileSelect = async (file: File) => {
     setIsProcessing(true);
@@ -31,8 +37,10 @@ const Index = () => {
 
     try {
       let text: string;
+      const isImage = isImageFile(file);
+      fileInfoRef.current = { name: file.name, type: isImage ? 'image' : 'pdf' };
 
-      if (isImageFile(file)) {
+      if (isImage) {
         text = await extractTextFromImage(file);
       } else {
         text = await extractTextFromPDF(file);
@@ -43,6 +51,7 @@ const Index = () => {
       }
 
       const parsed = extractNotarialData(text);
+      extractedTextRef.current = text;
       setParsedDocument(parsed);
       setCurrentData(parsed.extractedData);
 
@@ -59,10 +68,27 @@ const Index = () => {
     setObjectionText(null);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (currentData) {
       const objection = generateObjectionDocumentText(currentData);
       setObjectionText(objection);
+
+      // Save to history
+      if (user) {
+        const { error } = await supabase.from('documents').insert({
+          user_id: user.id,
+          original_filename: fileInfoRef.current.name,
+          file_type: fileInfoRef.current.type,
+          extracted_text: extractedTextRef.current,
+          generated_objection: objection,
+          extracted_data: currentData as any,
+        });
+        if (error) {
+          console.error('Error saving document:', error);
+        } else {
+          toast.success('Документ сохранён в историю');
+        }
+      }
     }
   };
 
