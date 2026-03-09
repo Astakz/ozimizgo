@@ -5,17 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { to: '/', label: 'Возражение', icon: FilePlus },
-  { to: '/profile', label: 'Профиль', icon: UserCircle },
-  { to: '/history', label: 'История', icon: FileStack },
-];
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Header() {
+  const { t } = useTranslation();
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+
+  const navItems = [
+    { to: '/', label: t('nav.objection'), icon: FilePlus },
+    { to: '/profile', label: t('nav.profile'), icon: UserCircle },
+    { to: '/history', label: t('nav.history'), icon: FileStack },
+  ];
 
   return (
     <header className="navy-gradient text-primary-foreground py-4 md:py-6 shadow-elevated">
@@ -28,10 +31,10 @@ export function Header() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-tight">
-                Возражение на исполнительную надпись
+                {t('header.title')}
               </h1>
               <p className="text-xs sm:text-sm text-gold-light mt-0.5 hidden sm:block">
-                Автоматическое формирование документа по законодательству РК
+                {t('header.subtitle')}
               </p>
             </div>
           </div>
@@ -58,11 +61,12 @@ export function Header() {
                 ))}
                 {isAdmin && (
                   <Button asChild variant="ghost" size="sm" className={cn("text-primary-foreground hover:bg-primary-foreground/10", location.pathname === '/admin' && "bg-primary-foreground/15")}>
-                    <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> Админ</Link>
+                    <Link to="/admin"><Settings className="w-4 h-4 mr-1" /> {t('nav.admin')}</Link>
                   </Button>
                 )}
+                <LanguageSwitcher variant="header" />
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={signOut}>
-                  <LogOut className="w-4 h-4 mr-1" /> Выйти
+                  <LogOut className="w-4 h-4 mr-1" /> {t('nav.logout')}
                 </Button>
               </nav>
 
@@ -75,7 +79,7 @@ export function Header() {
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[280px] bg-background">
                   <SheetHeader>
-                    <SheetTitle className="text-left">Меню</SheetTitle>
+                    <SheetTitle className="text-left">{t('nav.menu')}</SheetTitle>
                   </SheetHeader>
                   <nav className="flex flex-col gap-1 mt-6">
                     {navItems.map(item => (
@@ -98,16 +102,18 @@ export function Header() {
                         className="justify-start w-full h-12"
                         onClick={() => setOpen(false)}
                       >
-                        <Link to="/admin"><Settings className="w-5 h-5 mr-3" /> Админ</Link>
+                        <Link to="/admin"><Settings className="w-5 h-5 mr-3" /> {t('nav.admin')}</Link>
                       </Button>
                     )}
+                    <div className="border-t my-3" />
+                    <LanguageSwitcher variant="mobile" />
                     <div className="border-t my-3" />
                     <Button
                       variant="ghost"
                       className="justify-start w-full h-12 text-destructive hover:text-destructive"
                       onClick={() => { setOpen(false); signOut(); }}
                     >
-                      <LogOut className="w-5 h-5 mr-3" /> Выйти
+                      <LogOut className="w-5 h-5 mr-3" /> {t('nav.logout')}
                     </Button>
                   </nav>
                 </SheetContent>
