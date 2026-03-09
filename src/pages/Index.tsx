@@ -13,12 +13,14 @@ import type { ParsedDocument, NotarialData } from '@/types/notarial';
 import { Separator } from '@/components/ui/separator';
 import { ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 function isImageFile(file: File): boolean {
   return /^image\/(jpeg|jpg|png)$/.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
 }
 
 const Index = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedDocument, setParsedDocument] = useState<ParsedDocument | null>(null);
@@ -47,7 +49,7 @@ const Index = () => {
       }
       
       if (!text || text.trim().length < 50) {
-        throw new Error('Файл пуст или не содержит достаточно текста');
+        throw new Error(t('index.fileEmpty'));
       }
 
       const parsed = extractNotarialData(text);
@@ -57,7 +59,7 @@ const Index = () => {
 
     } catch (err) {
       console.error('Error processing file:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка при обработке файла');
+      setError(err instanceof Error ? err.message : t('index.processError'));
     } finally {
       setIsProcessing(false);
     }
@@ -73,10 +75,8 @@ const Index = () => {
       const objection = generateObjectionDocumentText(currentData);
       setObjectionText(objection);
 
-      // Save to history with PDF upload
       if (user) {
         try {
-          // Generate PDF blob
           const { generateSelectablePDF } = await import('@/utils/pdfDocumentGenerator');
           const pdfDoc = await generateSelectablePDF(objection, null);
           const pdfBlob = pdfDoc.output('blob');
@@ -105,7 +105,7 @@ const Index = () => {
           if (error) {
             console.error('Error saving document:', error);
           } else {
-            toast.success('Документ сохранён в историю');
+            toast.success(t('index.savedToHistory'));
           }
         } catch (saveErr) {
           console.error('Error saving document:', saveErr);
@@ -159,13 +159,13 @@ const Index = () => {
           {!parsedDocument && !isProcessing && (
             <section className="text-center py-6 sm:py-8 animate-fade-in">
               <h2 className="text-lg sm:text-xl font-serif font-semibold text-foreground mb-3 sm:mb-4">
-                Как это работает?
+                {t('index.howItWorks')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {[
-                  { step: '1', title: 'Загрузите документ', desc: 'PDF, фото или скриншот исполнительной надписи' },
-                  { step: '2', title: 'Проверьте данные', desc: 'Отредактируйте при необходимости' },
-                  { step: '3', title: 'Готовый документ', desc: 'Возражение в официальном формате РК' },
+                  { step: '1', title: t('index.step1Title'), desc: t('index.step1Desc') },
+                  { step: '2', title: t('index.step2Title'), desc: t('index.step2Desc') },
+                  { step: '3', title: t('index.step3Title'), desc: t('index.step3Desc') },
                 ].map((item) => (
                   <div key={item.step} className="p-4 sm:p-6 rounded-lg bg-card shadow-card border">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gold text-navy-deep font-bold flex items-center justify-center mx-auto mb-2 sm:mb-3 text-sm sm:text-base">
