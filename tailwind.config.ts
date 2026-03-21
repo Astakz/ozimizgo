@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Playfair Display', 'serif'],
-        sans: ['Inter', 'sans-serif'],
+        serif: ['Space Grotesk', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
         legal: ['Times New Roman', 'Times', 'serif'],
       },
       colors: {
