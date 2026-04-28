@@ -265,6 +265,10 @@ export const ru = {
     'common.success': 'Успешно',
     'common.loading': 'Загрузка...',
 
+    // Theme
+    'theme.dark': 'Тёмная тема',
+    'theme.light': 'Светлая тема',
+
     // Language
     'lang.kk': 'Қазақша',
     'lang.ru': 'Русский',

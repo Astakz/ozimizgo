@@ -263,6 +263,10 @@ export const en = {
     'common.success': 'Success',
     'common.loading': 'Loading...',
 
+    // Theme
+    'theme.dark': 'Dark mode',
+    'theme.light': 'Light mode',
+
     // Language
     'lang.kk': 'Қазақша',
     'lang.ru': 'Русский',

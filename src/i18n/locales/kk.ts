@@ -263,6 +263,10 @@ export const kk = {
     'common.success': 'Сәтті',
     'common.loading': 'Жүктелуде...',
 
+    // Theme
+    'theme.dark': 'Қараңғы режим',
+    'theme.light': 'Жарық режим',
+
     // Language
     'lang.kk': 'Қазақша',
     'lang.ru': 'Русский',
