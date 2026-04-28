@@ -7,6 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const { t } = useTranslation();
@@ -65,6 +66,7 @@ export function Header() {
                   </Button>
                 )}
                 <LanguageSwitcher variant="header" />
+                <ThemeToggle variant="header" />
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={signOut}>
                   <LogOut className="w-4 h-4 mr-1" /> {t('nav.logout')}
                 </Button>
@@ -107,6 +109,7 @@ export function Header() {
                     )}
                     <div className="border-t my-3" />
                     <LanguageSwitcher variant="mobile" />
+                    <ThemeToggle variant="mobile" />
                     <div className="border-t my-3" />
                     <Button
                       variant="ghost"
