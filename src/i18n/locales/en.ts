@@ -267,5 +267,55 @@ export const en = {
     'lang.kk': 'Қазақша',
     'lang.ru': 'Русский',
     'lang.en': 'English',
+
+    // Terms
+    'terms.title': 'User Agreement',
+    'terms.subtitle': 'Please read the user agreement before using the service',
+    'terms.link': 'User Agreement',
+    'terms.lastUpdated': 'Last updated',
+    'terms.sections': [
+      {
+        title: 'General Provisions',
+        items: [
+          'This user agreement (hereinafter — the "Agreement") governs the use of the online service for generating objections (hereinafter — the "Service"). By using the Service, you agree to the terms of this Agreement.',
+        ],
+      },
+      {
+        title: 'Data Processing',
+        items: [
+          '2.1. The Service does not store or process user-entered data after document generation is completed.',
+          '2.2. All information uploaded by the user is automatically deleted after the document is created.',
+          '2.3. The Service does not transfer data to third parties and does not use it for marketing or other purposes.',
+        ],
+      },
+      {
+        title: 'Limitation of Liability',
+        items: [
+          '3.1. The Service administration is not responsible for the accuracy, relevance, or legal correctness of generated documents.',
+          '3.2. The Service is for informational purposes only and does not constitute legal advice.',
+          '3.3. The user must independently verify generated documents before using them.',
+        ],
+      },
+      {
+        title: 'Use of the Service',
+        items: [
+          '4.1. The user agrees to use the Service only for lawful purposes.',
+          '4.2. The Service must not be used to create illegal, fake, or fraudulent documents.',
+        ],
+      },
+      {
+        title: 'Changes to the Agreement',
+        items: [
+          '5.1. The administration reserves the right to amend this Agreement without prior notice to users.',
+          '5.2. Continued use of the Service after changes are made indicates the user\'s agreement to the new terms.',
+        ],
+      },
+      {
+        title: 'Contact Information',
+        items: [
+          'For all questions regarding the Service, please contact 01temkaz@gmail.com.',
+        ],
+      },
+    ],
   },
 };
