@@ -18,6 +18,16 @@
   <meta name="twitter:title" content="Возражение на исполнительную надпись нотариуса РК">
   <meta property="og:description" content="Автоматическое формирование возражения на исполнительную надпись нотариуса по законодательству Республики Казахстан">
   <meta name="twitter:description" content="Автоматическое формирование возражения на исполнительную надпись нотариуса по законодательству Республики Казахстан">
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = stored === 'dark' || (!stored && prefersDark);
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
   <body>
