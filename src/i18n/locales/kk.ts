@@ -9,6 +9,7 @@ export const kk = {
     'nav.admin': 'Әкімші',
     'nav.logout': 'Шығу',
     'nav.menu': 'Мәзір',
+    'nav.aiLawyer': 'AI-заңгер',
 
     // Footer
     'footer.legal': 'ҚР азаматтары үшін заң құралы',
@@ -262,6 +263,23 @@ export const kk = {
     'common.tryLater': 'Кейінірек көріңіз',
     'common.success': 'Сәтті',
     'common.loading': 'Жүктелуде...',
+
+    // AI Lawyer
+    'aiLawyer.title': 'AI-заңгер',
+    'aiLawyer.subtitle': 'Құжатыңызды жүктеп, ҚР заңдары бойынша кеңес алыңыз',
+    'aiLawyer.uploadHint': 'PDF немесе сурет жүктеңіз (міндетті емес)',
+    'aiLawyer.questionLabel': 'Сұрағыңыз',
+    'aiLawyer.questionPlaceholder': 'Мысалы: бұл құжатқа қалай қарсылық білдіруге болады?',
+    'aiLawyer.submit': 'Кеңес сұрау',
+    'aiLawyer.analyzing': 'Талдау жүріп жатыр...',
+    'aiLawyer.extracting': 'Мәтін шығару...',
+    'aiLawyer.usage': 'Бүгін пайдаланылды: {{used}}/{{limit}}',
+    'aiLawyer.limitReached': 'Бүгінгі лимит таусылды. Ертең қайта көріңіз.',
+    'aiLawyer.empty': 'Сұрақ немесе құжат қажет',
+    'aiLawyer.disclaimer': 'Бұл — ақпараттық сипаттағы AI кеңесі, ресми заң қызметін алмастырмайды.',
+    'aiLawyer.answer': 'AI жауабы',
+    'aiLawyer.history': 'Соңғы консультациялар',
+
 
     // Theme
     'theme.dark': 'Қараңғы режим',
