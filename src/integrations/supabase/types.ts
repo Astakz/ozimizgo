@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_consultations: {
+        Row: {
+          answer: string
+          created_at: string
+          document_excerpt: string | null
+          id: string
+          language: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          document_excerpt?: string | null
+          id?: string
+          language?: string
+          question: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          document_excerpt?: string | null
+          id?: string
+          language?: string
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       case_responses: {
         Row: {
           case_id: string

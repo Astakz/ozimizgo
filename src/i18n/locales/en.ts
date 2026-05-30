@@ -9,6 +9,7 @@ export const en = {
     'nav.admin': 'Admin',
     'nav.logout': 'Logout',
     'nav.menu': 'Menu',
+    'nav.aiLawyer': 'AI Lawyer',
 
     // Footer
     'footer.legal': 'Legal tool for citizens of RK',
@@ -262,6 +263,22 @@ export const en = {
     'common.tryLater': 'Try again later',
     'common.success': 'Success',
     'common.loading': 'Loading...',
+
+    // AI Lawyer
+    'aiLawyer.title': 'AI Lawyer',
+    'aiLawyer.subtitle': 'Upload your document and get advice based on KZ law',
+    'aiLawyer.uploadHint': 'Upload a PDF or image (optional)',
+    'aiLawyer.questionLabel': 'Your question',
+    'aiLawyer.questionPlaceholder': 'E.g. how can I challenge this document?',
+    'aiLawyer.submit': 'Get advice',
+    'aiLawyer.analyzing': 'Analyzing...',
+    'aiLawyer.extracting': 'Extracting text...',
+    'aiLawyer.usage': 'Used today: {{used}}/{{limit}}',
+    'aiLawyer.limitReached': 'Daily limit reached. Try again tomorrow.',
+    'aiLawyer.empty': 'Enter a question or upload a document',
+    'aiLawyer.disclaimer': 'This is an informational AI consultation, not a substitute for a licensed lawyer.',
+    'aiLawyer.answer': 'AI response',
+    'aiLawyer.history': 'Recent consultations',
 
     // Theme
     'theme.dark': 'Dark mode',

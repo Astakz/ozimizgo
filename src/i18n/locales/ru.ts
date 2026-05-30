@@ -9,6 +9,7 @@ export const ru = {
     'nav.admin': 'Админ',
     'nav.logout': 'Выйти',
     'nav.menu': 'Меню',
+    'nav.aiLawyer': 'AI-юрист',
 
     // Footer
     'footer.legal': 'Юридический инструмент для граждан РК',
@@ -264,6 +265,22 @@ export const ru = {
     'common.tryLater': 'Попробуйте позже',
     'common.success': 'Успешно',
     'common.loading': 'Загрузка...',
+
+    // AI Lawyer
+    'aiLawyer.title': 'AI-юрист',
+    'aiLawyer.subtitle': 'Загрузите документ и получите консультацию по законам РК',
+    'aiLawyer.uploadHint': 'Загрузите PDF или изображение (необязательно)',
+    'aiLawyer.questionLabel': 'Ваш вопрос',
+    'aiLawyer.questionPlaceholder': 'Например: как обжаловать этот документ?',
+    'aiLawyer.submit': 'Получить консультацию',
+    'aiLawyer.analyzing': 'Анализ...',
+    'aiLawyer.extracting': 'Извлечение текста...',
+    'aiLawyer.usage': 'Использовано сегодня: {{used}}/{{limit}}',
+    'aiLawyer.limitReached': 'Дневной лимит исчерпан. Попробуйте завтра.',
+    'aiLawyer.empty': 'Введите вопрос или загрузите документ',
+    'aiLawyer.disclaimer': 'Это информационная AI-консультация, не заменяет услуги юриста.',
+    'aiLawyer.answer': 'Ответ AI',
+    'aiLawyer.history': 'Последние консультации',
 
     // Theme
     'theme.dark': 'Тёмная тема',
