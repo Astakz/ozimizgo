@@ -69,16 +69,21 @@ const Admin = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [newCode, setNewCode] = useState('');
+  const [durationPreset, setDurationPreset] = useState<string>('86400');
+  const [customSeconds, setCustomSeconds] = useState<string>('');
   const [loadingCodes, setLoadingCodes] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [creating, setCreating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [viewType, setViewType] = useState<'text' | 'objection'>('objection');
+  const [editing, setEditing] = useState<InviteCode | null>(null);
+  const [editPreset, setEditPreset] = useState<string>('86400');
+  const [editCustom, setEditCustom] = useState<string>('');
 
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
-    const { data, error } = await supabase.from('invite_codes').select('id, code, is_used, created_at, used_at').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('invite_codes').select('id, code, is_used, created_at, used_at, expires_at, disabled').order('created_at', { ascending: false });
     if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
     else setInviteCodes(data || []);
     setLoadingCodes(false);
@@ -102,6 +107,28 @@ const Admin = () => {
 
   useEffect(() => { fetchCodes(); fetchUsers(); fetchDocuments(); }, [fetchCodes, fetchUsers, fetchDocuments]);
 
+  // Realtime subscription for invite_codes
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-invite-codes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invite_codes' }, () => {
+        fetchCodes();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchCodes]);
+
+  const resolveSeconds = (preset: string, custom: string): number | null => {
+    if (preset === '0') return 0; // no expiry
+    if (preset === '-1') {
+      const n = parseInt(custom, 10);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return n;
+    }
+    const n = parseInt(preset, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
@@ -111,8 +138,11 @@ const Admin = () => {
 
   const createInviteCode = async () => {
     if (!newCode.trim()) { toast({ title: t('common.error'), description: t('admin.enterCode'), variant: 'destructive' }); return; }
+    const secs = resolveSeconds(durationPreset, customSeconds);
+    if (secs === null) { toast({ title: 'Ошибка', description: 'Укажите корректное время в секундах', variant: 'destructive' }); return; }
     setCreating(true);
-    const { error } = await supabase.from('invite_codes').insert({ code: newCode.trim().toUpperCase() });
+    const expires_at = secs === 0 ? null : new Date(Date.now() + secs * 1000).toISOString();
+    const { error } = await supabase.from('invite_codes').insert({ code: newCode.trim().toUpperCase(), expires_at, disabled: false });
     if (error) toast({ title: t('common.error'), description: error.message.includes('duplicate') ? t('admin.codeExists') : error.message, variant: 'destructive' });
     else { toast({ title: t('common.success'), description: t('admin.codeCreated') }); setNewCode(''); fetchCodes(); }
     setCreating(false);
@@ -123,6 +153,40 @@ const Admin = () => {
     if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
     else { toast({ title: t('admin.deleted') }); fetchCodes(); }
   };
+
+  const toggleDisable = async (code: InviteCode) => {
+    const { error } = await supabase.from('invite_codes').update({ disabled: !code.disabled }).eq('id', code.id);
+    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    else { toast({ title: code.disabled ? 'Код активирован' : 'Код отключён' }); fetchCodes(); }
+  };
+
+  const extendCode = async (code: InviteCode, addSeconds: number) => {
+    const base = code.expires_at && new Date(code.expires_at).getTime() > Date.now()
+      ? new Date(code.expires_at).getTime()
+      : Date.now();
+    const newExp = new Date(base + addSeconds * 1000).toISOString();
+    const { error } = await supabase.from('invite_codes').update({ expires_at: newExp }).eq('id', code.id);
+    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    else { toast({ title: 'Срок продлён' }); fetchCodes(); }
+  };
+
+  const openEdit = (code: InviteCode) => {
+    setEditing(code);
+    setEditPreset('86400');
+    setEditCustom('');
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    const secs = resolveSeconds(editPreset, editCustom);
+    if (secs === null) { toast({ title: 'Ошибка', description: 'Укажите корректное время', variant: 'destructive' }); return; }
+    const expires_at = secs === 0 ? null : new Date(Date.now() + secs * 1000).toISOString();
+    const { error } = await supabase.from('invite_codes').update({ expires_at }).eq('id', editing.id);
+    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    else { toast({ title: 'Время обновлено' }); setEditing(null); fetchCodes(); }
+  };
+
+
 
   const deleteUser = async (userId: string) => {
     const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
