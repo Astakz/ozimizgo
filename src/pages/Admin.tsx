@@ -410,6 +410,39 @@ const Admin = () => {
             </ScrollArea>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Изменить срок действия</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">Код: <span className="font-mono">{editing?.code}</span></div>
+              <div>
+                <Label className="text-xs">Новый срок (от текущего момента)</Label>
+                <Select value={editPreset} onValueChange={setEditPreset}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DURATION_PRESETS.map((p) => (
+                      <SelectItem key={p.seconds} value={String(p.seconds)}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editPreset === '-1' && (
+                <div>
+                  <Label className="text-xs">Секунд</Label>
+                  <Input type="number" min={1} value={editCustom} onChange={(e) => setEditCustom(e.target.value)} />
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditing(null)}>Отмена</Button>
+              <Button onClick={saveEdit}>Сохранить</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );
