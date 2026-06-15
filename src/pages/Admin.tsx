@@ -3,21 +3,64 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Power, PowerOff, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-interface InviteCode { id: string; code: string; is_used: boolean; created_at: string; used_at: string | null; }
+interface InviteCode { id: string; code: string; is_used: boolean; created_at: string; used_at: string | null; expires_at: string | null; disabled: boolean; }
 interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; }
 interface Document { id: string; user_id: string; original_filename: string; file_type: string; extracted_text: string; generated_objection: string; created_at: string; }
+
+const DURATION_PRESETS: { label: string; seconds: number }[] = [
+  { label: '1 минута', seconds: 60 },
+  { label: '5 минут', seconds: 300 },
+  { label: '10 минут', seconds: 600 },
+  { label: '1 час', seconds: 3600 },
+  { label: '24 часа', seconds: 86400 },
+  { label: '7 дней', seconds: 604800 },
+  { label: '30 дней', seconds: 2592000 },
+  { label: 'Без срока', seconds: 0 },
+  { label: 'Своё значение', seconds: -1 },
+];
+
+function formatRemaining(ms: number): string {
+  if (ms <= 0) return '0с';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const parts: string[] = [];
+  if (d) parts.push(`${d}д`);
+  if (d || h) parts.push(`${h}ч`);
+  if (d || h || m) parts.push(`${m}м`);
+  parts.push(`${sec}с`);
+  return parts.join(' ');
+}
+
+function CountdownCell({ expiresAt, disabled, isUsed }: { expiresAt: string | null; disabled: boolean; isUsed: boolean }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (isUsed) return <span className="text-muted-foreground text-sm">—</span>;
+  if (disabled) return <span className="text-muted-foreground text-sm">отключён</span>;
+  if (!expiresAt) return <span className="text-sm text-emerald-600">∞</span>;
+  const remain = new Date(expiresAt).getTime() - Date.now();
+  if (remain <= 0) return <span className="text-sm text-destructive">истёк</span>;
+  return <span className="font-mono text-sm tabular-nums">{formatRemaining(remain)}</span>;
+}
 
 const Admin = () => {
   const { t } = useTranslation();
