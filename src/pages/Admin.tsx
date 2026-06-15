@@ -241,10 +241,29 @@ const Admin = () => {
                 <CardTitle className="text-lg">{t('admin.createCode')}</CardTitle>
                 <CardDescription>{t('admin.createCodeDesc')}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
+              <CardContent className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input placeholder={t('admin.codePlaceholder')} value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} className="font-mono tracking-wider" />
                   <Button variant="outline" onClick={generateCode}>{t('admin.generate')}</Button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Срок действия</Label>
+                    <Select value={durationPreset} onValueChange={setDurationPreset}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DURATION_PRESETS.map((p) => (
+                          <SelectItem key={p.seconds} value={String(p.seconds)}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {durationPreset === '-1' && (
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Секунд</Label>
+                      <Input type="number" min={1} placeholder="например, 3600" value={customSeconds} onChange={(e) => setCustomSeconds(e.target.value)} />
+                    </div>
+                  )}
                   <Button onClick={createInviteCode} disabled={creating}>
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {t('admin.create')}
                   </Button>
@@ -259,28 +278,51 @@ const Admin = () => {
                 : (
                   <Table>
                     <TableHeader><TableRow>
-                      <TableHead>{t('admin.code')}</TableHead><TableHead>{t('admin.status')}</TableHead><TableHead>{t('admin.createdAt')}</TableHead><TableHead className="text-right">{t('admin.actions')}</TableHead>
+                      <TableHead>{t('admin.code')}</TableHead>
+                      <TableHead>{t('admin.status')}</TableHead>
+                      <TableHead>Осталось</TableHead>
+                      <TableHead>{t('admin.createdAt')}</TableHead>
+                      <TableHead className="text-right">{t('admin.actions')}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {inviteCodes.map((code) => (
-                        <TableRow key={code.id}>
-                          <TableCell className="font-mono tracking-wider font-medium">{code.code}</TableCell>
-                          <TableCell><Badge variant={code.is_used ? 'secondary' : 'default'}>{code.is_used ? t('admin.used') : t('admin.active')}</Badge></TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{new Date(code.created_at).toLocaleDateString('ru-RU')}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => copyCode(code.code)}><Copy className="w-4 h-4" /></Button>
-                              <Button variant="ghost" size="icon" onClick={() => deleteCode(code.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {inviteCodes.map((code) => {
+                        const expired = !!code.expires_at && new Date(code.expires_at).getTime() <= Date.now();
+                        let statusLabel = t('admin.active');
+                        let statusVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';
+                        if (code.is_used) { statusLabel = t('admin.used'); statusVariant = 'secondary'; }
+                        else if (code.disabled) { statusLabel = 'Отключён'; statusVariant = 'outline'; }
+                        else if (expired) { statusLabel = 'Истёк'; statusVariant = 'destructive'; }
+                        return (
+                          <TableRow key={code.id}>
+                            <TableCell className="font-mono tracking-wider font-medium">{code.code}</TableCell>
+                            <TableCell><Badge variant={statusVariant}>{statusLabel}</Badge></TableCell>
+                            <TableCell><CountdownCell expiresAt={code.expires_at} disabled={code.disabled} isUsed={code.is_used} /></TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{new Date(code.created_at).toLocaleDateString('ru-RU')}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 flex-wrap">
+                                <Button variant="ghost" size="icon" title="Копировать" onClick={() => copyCode(code.code)}><Copy className="w-4 h-4" /></Button>
+                                {!code.is_used && (
+                                  <>
+                                    <Button variant="ghost" size="icon" title="+1 час" onClick={() => extendCode(code, 3600)}><Clock className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="icon" title="Изменить срок" onClick={() => openEdit(code)}><Pencil className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="icon" title={code.disabled ? 'Активировать' : 'Отключить'} onClick={() => toggleDisable(code)}>
+                                      {code.disabled ? <Power className="w-4 h-4 text-emerald-600" /> : <PowerOff className="w-4 h-4 text-amber-600" />}
+                                    </Button>
+                                  </>
+                                )}
+                                <Button variant="ghost" size="icon" title="Удалить" onClick={() => deleteCode(code.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
 
           <TabsContent value="users">
             <Card className="shadow-card">
