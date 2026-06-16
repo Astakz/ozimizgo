@@ -144,6 +144,66 @@ const Admin = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchCodes]);
 
+  // Realtime subscription for profiles (block status)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchUsers]);
+
+  const callAdminAction = async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('admin-user-action', { body: payload });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String((data as { error: string }).error));
+    }
+    return data;
+  };
+
+  const submitBan = async () => {
+    if (!banTarget) return;
+    const secs = resolveSeconds(banPreset, banCustom);
+    if (!secs || secs <= 0) { toast({ title: 'Ошибка', description: 'Укажите корректное время блокировки', variant: 'destructive' }); return; }
+    setBanSubmitting(true);
+    try {
+      const blocked_until = new Date(Date.now() + secs * 1000).toISOString();
+      await callAdminAction({ action: 'block', target_user_id: banTarget.user_id, blocked_until, reason: banReason || null });
+      toast({ title: 'Аккаунт заблокирован' });
+      setBanTarget(null); setBanReason(''); setBanCustom('');
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally { setBanSubmitting(false); }
+  };
+
+  const unblockUser = async (u: Profile) => {
+    try {
+      await callAdminAction({ action: 'unblock', target_user_id: u.user_id });
+      toast({ title: 'Блокировка снята' });
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    }
+  };
+
+  const hardDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleteSubmitting(true);
+    try {
+      await callAdminAction({ action: 'delete', target_user_id: deleteTarget.user_id });
+      toast({ title: 'Аккаунт удалён' });
+      setDeleteTarget(null);
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally { setDeleteSubmitting(false); }
+  };
+
+
   const resolveSeconds = (preset: string, custom: string): number | null => {
     if (preset === '0') return 0; // no expiry
     if (preset === '-1') {
