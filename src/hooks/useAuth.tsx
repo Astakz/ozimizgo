@@ -34,13 +34,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsAdmin(!!data);
   };
 
+  const enforceBlock = async (userId: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('blocked_until')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const until = data?.blocked_until ? new Date(data.blocked_until).getTime() : 0;
+    if (until && until > Date.now()) {
+      const mins = Math.ceil((until - Date.now()) / 60000);
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      if (typeof window !== 'undefined') {
+        window.alert(`Аккаунт заблокирован. Осталось примерно ${mins} мин.`);
+      }
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => checkAdmin(session.user.id), 0);
+          const uid = session.user.id;
+          setTimeout(async () => {
+            const blocked = await enforceBlock(uid);
+            if (!blocked) checkAdmin(uid);
+          }, 0);
         } else {
           setIsAdmin(false);
         }
@@ -48,11 +73,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkAdmin(session.user.id);
+        const blocked = await enforceBlock(session.user.id);
+        if (!blocked) checkAdmin(session.user.id);
       }
       setLoading(false);
     });
