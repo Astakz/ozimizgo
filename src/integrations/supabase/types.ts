@@ -318,6 +318,9 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          blocked_at: string | null
+          blocked_reason: string | null
+          blocked_until: string | null
           created_at: string
           email: string
           experience: string | null
@@ -333,6 +336,9 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          blocked_until?: string | null
           created_at?: string
           email: string
           experience?: string | null
@@ -348,6 +354,9 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
+          blocked_until?: string | null
           created_at?: string
           email?: string
           experience?: string | null
@@ -428,6 +437,7 @@ export type Database = {
         Args: { check_nickname: string; exclude_user_id?: string }
         Returns: boolean
       }
+      is_user_blocked: { Args: { _user_id: string }; Returns: boolean }
       use_invite_code: {
         Args: { invite_code_value: string; used_by_user_id: string }
         Returns: undefined
