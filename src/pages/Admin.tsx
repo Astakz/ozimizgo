@@ -274,10 +274,11 @@ const Admin = () => {
 
 
 
-  const deleteUser = async (userId: string) => {
-    const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
-    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
-    else { toast({ title: t('admin.userDeleted') }); fetchUsers(); }
+  const openBan = (u: Profile) => {
+    setBanTarget(u);
+    setBanPreset('3600');
+    setBanCustom('');
+    setBanReason(u.blocked_reason || '');
   };
 
   const copyCode = (code: string) => { navigator.clipboard.writeText(code); toast({ title: t('admin.copied'), description: code }); };
@@ -422,20 +423,48 @@ const Admin = () => {
                 : (
                   <Table>
                     <TableHeader><TableRow>
-                      <TableHead>{t('admin.name')}</TableHead><TableHead>Email</TableHead><TableHead>{t('admin.inviteCode')}</TableHead><TableHead>{t('admin.regDate')}</TableHead><TableHead className="text-right">{t('admin.actions')}</TableHead>
+                      <TableHead>{t('admin.name')}</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Осталось</TableHead>
+                      <TableHead>{t('admin.regDate')}</TableHead>
+                      <TableHead className="text-right">{t('admin.actions')}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {users.map((u) => (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.name}</TableCell>
-                          <TableCell>{u.email}</TableCell>
-                          <TableCell className="font-mono text-sm">{u.invite_code || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" onClick={() => deleteUser(u.user_id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {users.map((u) => {
+                        const blockedMs = u.blocked_until ? new Date(u.blocked_until).getTime() - Date.now() : 0;
+                        const isBlocked = blockedMs > 0;
+                        return (
+                          <TableRow key={u.id} className={isBlocked ? 'bg-destructive/5' : undefined}>
+                            <TableCell className="font-medium">{u.name || '—'}</TableCell>
+                            <TableCell className="text-sm">{u.email}</TableCell>
+                            <TableCell>
+                              {isBlocked
+                                ? <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" />blocked</Badge>
+                                : <Badge variant="default" className="gap-1">active</Badge>}
+                            </TableCell>
+                            <TableCell>
+                              {isBlocked
+                                ? <span className="font-mono text-sm tabular-nums text-destructive">{formatRemaining(blockedMs)}</span>
+                                : <span className="text-muted-foreground text-sm">—</span>}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 flex-wrap">
+                                {isBlocked ? (
+                                  <>
+                                    <Button variant="ghost" size="icon" title="Изменить срок блокировки" onClick={() => openBan(u)}><Pencil className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="icon" title="Разблокировать" onClick={() => unblockUser(u)}><ShieldOff className="w-4 h-4 text-emerald-600" /></Button>
+                                  </>
+                                ) : (
+                                  <Button variant="ghost" size="icon" title="Заблокировать" onClick={() => openBan(u)}><Ban className="w-4 h-4 text-amber-600" /></Button>
+                                )}
+                                <Button variant="ghost" size="icon" title="Удалить навсегда" onClick={() => setDeleteTarget(u)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
