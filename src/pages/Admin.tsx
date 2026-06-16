@@ -558,6 +558,68 @@ const Admin = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Ban dialog */}
+        <Dialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Ban className="w-5 h-5 text-amber-600" /> Заблокировать аккаунт</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {banTarget?.email}
+                {banTarget?.blocked_until && new Date(banTarget.blocked_until).getTime() > Date.now() && (
+                  <div className="mt-1 text-amber-600">Уже заблокирован. Установка нового срока перезапишет текущий.</div>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs">Длительность блокировки</Label>
+                <Select value={banPreset} onValueChange={setBanPreset}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {BAN_PRESETS.map((p) => (
+                      <SelectItem key={p.seconds} value={String(p.seconds)}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {banPreset === '-1' && (
+                <div>
+                  <Label className="text-xs">Секунд</Label>
+                  <Input type="number" min={1} value={banCustom} onChange={(e) => setBanCustom(e.target.value)} placeholder="например, 7200" />
+                </div>
+              )}
+              <div>
+                <Label className="text-xs">Причина (необязательно)</Label>
+                <Textarea value={banReason} onChange={(e) => setBanReason(e.target.value)} rows={2} placeholder="Нарушение правил…" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBanTarget(null)} disabled={banSubmitting}>Отмена</Button>
+              <Button onClick={submitBan} disabled={banSubmitting}>
+                {banSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Заблокировать
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hard delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Удалить аккаунт навсегда?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Аккаунт <span className="font-medium">{deleteTarget?.email}</span> и все связанные данные будут удалены из базы безвозвратно. Это действие нельзя отменить.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteSubmitting}>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={hardDeleteUser} disabled={deleteSubmitting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </main>
     </div>
   );
