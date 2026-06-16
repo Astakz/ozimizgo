@@ -35,6 +35,17 @@ const DURATION_PRESETS: { label: string; seconds: number }[] = [
   { label: 'Своё значение', seconds: -1 },
 ];
 
+const BAN_PRESETS: { label: string; seconds: number }[] = [
+  { label: '5 минут', seconds: 300 },
+  { label: '30 минут', seconds: 1800 },
+  { label: '1 час', seconds: 3600 },
+  { label: '24 часа', seconds: 86400 },
+  { label: '7 дней', seconds: 604800 },
+  { label: '30 дней', seconds: 2592000 },
+  { label: '1 год', seconds: 31536000 },
+  { label: 'Своё значение (сек)', seconds: -1 },
+];
+
 function formatRemaining(ms: number): string {
   if (ms <= 0) return '0с';
   const s = Math.floor(ms / 1000);
