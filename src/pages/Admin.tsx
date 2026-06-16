@@ -12,13 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Power, PowerOff, Pencil, Clock } from 'lucide-react';
+import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Power, PowerOff, Pencil, Clock, Ban, ShieldOff, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface InviteCode { id: string; code: string; is_used: boolean; created_at: string; used_at: string | null; expires_at: string | null; disabled: boolean; }
-interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; }
+interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; blocked_until: string | null; blocked_reason: string | null; blocked_at: string | null; }
 interface Document { id: string; user_id: string; original_filename: string; file_type: string; extracted_text: string; generated_objection: string; created_at: string; }
 
 const DURATION_PRESETS: { label: string; seconds: number }[] = [
@@ -31,6 +33,17 @@ const DURATION_PRESETS: { label: string; seconds: number }[] = [
   { label: '30 дней', seconds: 2592000 },
   { label: 'Без срока', seconds: 0 },
   { label: 'Своё значение', seconds: -1 },
+];
+
+const BAN_PRESETS: { label: string; seconds: number }[] = [
+  { label: '5 минут', seconds: 300 },
+  { label: '30 минут', seconds: 1800 },
+  { label: '1 час', seconds: 3600 },
+  { label: '24 часа', seconds: 86400 },
+  { label: '7 дней', seconds: 604800 },
+  { label: '30 дней', seconds: 2592000 },
+  { label: '1 год', seconds: 31536000 },
+  { label: 'Своё значение (сек)', seconds: -1 },
 ];
 
 function formatRemaining(ms: number): string {
@@ -80,6 +93,19 @@ const Admin = () => {
   const [editing, setEditing] = useState<InviteCode | null>(null);
   const [editPreset, setEditPreset] = useState<string>('86400');
   const [editCustom, setEditCustom] = useState<string>('');
+  const [banTarget, setBanTarget] = useState<Profile | null>(null);
+  const [banPreset, setBanPreset] = useState<string>('3600');
+  const [banCustom, setBanCustom] = useState<string>('');
+  const [banReason, setBanReason] = useState<string>('');
+  const [banSubmitting, setBanSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [, setNowTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
@@ -117,6 +143,66 @@ const Admin = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchCodes]);
+
+  // Realtime subscription for profiles (block status)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchUsers]);
+
+  const callAdminAction = async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('admin-user-action', { body: payload });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && data.error) {
+      throw new Error(String((data as { error: string }).error));
+    }
+    return data;
+  };
+
+  const submitBan = async () => {
+    if (!banTarget) return;
+    const secs = resolveSeconds(banPreset, banCustom);
+    if (!secs || secs <= 0) { toast({ title: 'Ошибка', description: 'Укажите корректное время блокировки', variant: 'destructive' }); return; }
+    setBanSubmitting(true);
+    try {
+      const blocked_until = new Date(Date.now() + secs * 1000).toISOString();
+      await callAdminAction({ action: 'block', target_user_id: banTarget.user_id, blocked_until, reason: banReason || null });
+      toast({ title: 'Аккаунт заблокирован' });
+      setBanTarget(null); setBanReason(''); setBanCustom('');
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally { setBanSubmitting(false); }
+  };
+
+  const unblockUser = async (u: Profile) => {
+    try {
+      await callAdminAction({ action: 'unblock', target_user_id: u.user_id });
+      toast({ title: 'Блокировка снята' });
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    }
+  };
+
+  const hardDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleteSubmitting(true);
+    try {
+      await callAdminAction({ action: 'delete', target_user_id: deleteTarget.user_id });
+      toast({ title: 'Аккаунт удалён' });
+      setDeleteTarget(null);
+      fetchUsers();
+    } catch (e) {
+      toast({ title: 'Ошибка', description: e instanceof Error ? e.message : String(e), variant: 'destructive' });
+    } finally { setDeleteSubmitting(false); }
+  };
+
 
   const resolveSeconds = (preset: string, custom: string): number | null => {
     if (preset === '0') return 0; // no expiry
@@ -188,10 +274,11 @@ const Admin = () => {
 
 
 
-  const deleteUser = async (userId: string) => {
-    const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
-    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
-    else { toast({ title: t('admin.userDeleted') }); fetchUsers(); }
+  const openBan = (u: Profile) => {
+    setBanTarget(u);
+    setBanPreset('3600');
+    setBanCustom('');
+    setBanReason(u.blocked_reason || '');
   };
 
   const copyCode = (code: string) => { navigator.clipboard.writeText(code); toast({ title: t('admin.copied'), description: code }); };
@@ -336,20 +423,48 @@ const Admin = () => {
                 : (
                   <Table>
                     <TableHeader><TableRow>
-                      <TableHead>{t('admin.name')}</TableHead><TableHead>Email</TableHead><TableHead>{t('admin.inviteCode')}</TableHead><TableHead>{t('admin.regDate')}</TableHead><TableHead className="text-right">{t('admin.actions')}</TableHead>
+                      <TableHead>{t('admin.name')}</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Осталось</TableHead>
+                      <TableHead>{t('admin.regDate')}</TableHead>
+                      <TableHead className="text-right">{t('admin.actions')}</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {users.map((u) => (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-medium">{u.name}</TableCell>
-                          <TableCell>{u.email}</TableCell>
-                          <TableCell className="font-mono text-sm">{u.invite_code || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" onClick={() => deleteUser(u.user_id)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {users.map((u) => {
+                        const blockedMs = u.blocked_until ? new Date(u.blocked_until).getTime() - Date.now() : 0;
+                        const isBlocked = blockedMs > 0;
+                        return (
+                          <TableRow key={u.id} className={isBlocked ? 'bg-destructive/5' : undefined}>
+                            <TableCell className="font-medium">{u.name || '—'}</TableCell>
+                            <TableCell className="text-sm">{u.email}</TableCell>
+                            <TableCell>
+                              {isBlocked
+                                ? <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" />blocked</Badge>
+                                : <Badge variant="default" className="gap-1">active</Badge>}
+                            </TableCell>
+                            <TableCell>
+                              {isBlocked
+                                ? <span className="font-mono text-sm tabular-nums text-destructive">{formatRemaining(blockedMs)}</span>
+                                : <span className="text-muted-foreground text-sm">—</span>}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 flex-wrap">
+                                {isBlocked ? (
+                                  <>
+                                    <Button variant="ghost" size="icon" title="Изменить срок блокировки" onClick={() => openBan(u)}><Pencil className="w-4 h-4" /></Button>
+                                    <Button variant="ghost" size="icon" title="Разблокировать" onClick={() => unblockUser(u)}><ShieldOff className="w-4 h-4 text-emerald-600" /></Button>
+                                  </>
+                                ) : (
+                                  <Button variant="ghost" size="icon" title="Заблокировать" onClick={() => openBan(u)}><Ban className="w-4 h-4 text-amber-600" /></Button>
+                                )}
+                                <Button variant="ghost" size="icon" title="Удалить навсегда" onClick={() => setDeleteTarget(u)} className="text-destructive hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
@@ -442,6 +557,68 @@ const Admin = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Ban dialog */}
+        <Dialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Ban className="w-5 h-5 text-amber-600" /> Заблокировать аккаунт</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {banTarget?.email}
+                {banTarget?.blocked_until && new Date(banTarget.blocked_until).getTime() > Date.now() && (
+                  <div className="mt-1 text-amber-600">Уже заблокирован. Установка нового срока перезапишет текущий.</div>
+                )}
+              </div>
+              <div>
+                <Label className="text-xs">Длительность блокировки</Label>
+                <Select value={banPreset} onValueChange={setBanPreset}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {BAN_PRESETS.map((p) => (
+                      <SelectItem key={p.seconds} value={String(p.seconds)}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {banPreset === '-1' && (
+                <div>
+                  <Label className="text-xs">Секунд</Label>
+                  <Input type="number" min={1} value={banCustom} onChange={(e) => setBanCustom(e.target.value)} placeholder="например, 7200" />
+                </div>
+              )}
+              <div>
+                <Label className="text-xs">Причина (необязательно)</Label>
+                <Textarea value={banReason} onChange={(e) => setBanReason(e.target.value)} rows={2} placeholder="Нарушение правил…" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBanTarget(null)} disabled={banSubmitting}>Отмена</Button>
+              <Button onClick={submitBan} disabled={banSubmitting}>
+                {banSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Заблокировать
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hard delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Удалить аккаунт навсегда?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Аккаунт <span className="font-medium">{deleteTarget?.email}</span> и все связанные данные будут удалены из базы безвозвратно. Это действие нельзя отменить.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteSubmitting}>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={hardDeleteUser} disabled={deleteSubmitting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </main>
     </div>
