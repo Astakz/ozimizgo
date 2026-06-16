@@ -93,6 +93,19 @@ const Admin = () => {
   const [editing, setEditing] = useState<InviteCode | null>(null);
   const [editPreset, setEditPreset] = useState<string>('86400');
   const [editCustom, setEditCustom] = useState<string>('');
+  const [banTarget, setBanTarget] = useState<Profile | null>(null);
+  const [banPreset, setBanPreset] = useState<string>('3600');
+  const [banCustom, setBanCustom] = useState<string>('');
+  const [banReason, setBanReason] = useState<string>('');
+  const [banSubmitting, setBanSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [, setNowTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
