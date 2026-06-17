@@ -74,8 +74,19 @@ export default function History() {
 
   const handleDownload = async (doc: DocumentRecord) => {
     if (doc.file_url) {
+      // file_url may be a legacy public URL or a storage path (private bucket)
+      let href = doc.file_url;
+      if (!/^https?:\/\//i.test(href)) {
+        const { data: signed, error: signErr } = await supabase
+          .storage.from('documents').createSignedUrl(href, 60 * 10);
+        if (signErr || !signed?.signedUrl) {
+          toast.error(t('history.downloadStarted'));
+        } else {
+          href = signed.signedUrl;
+        }
+      }
       const link = document.createElement('a');
-      link.href = doc.file_url;
+      link.href = href;
       link.download = `${doc.original_filename.replace(/\.[^.]+$/, '')}_возражение.pdf`;
       link.target = '_blank'; link.rel = 'noopener noreferrer';
       document.body.appendChild(link); link.click(); document.body.removeChild(link);

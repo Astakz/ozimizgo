@@ -87,11 +87,8 @@ const Index = () => {
             .from('documents')
             .upload(fileName, pdfBlob, { contentType: 'application/pdf' });
 
-          let fileUrl: string | null = null;
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName);
-            fileUrl = urlData.publicUrl;
-          }
+          // Store storage path; signed URLs are generated on download (bucket is private)
+          const fileUrl: string | null = uploadError ? null : fileName;
 
           const { error } = await supabase.from('documents').insert({
             user_id: user.id,
