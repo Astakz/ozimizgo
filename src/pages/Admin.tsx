@@ -107,26 +107,42 @@ const Admin = () => {
     return () => clearInterval(id);
   }, []);
 
+  // Retry helper for transient mobile-Safari "Load failed" / network errors
+  const withRetry = async <T,>(fn: () => Promise<{ data: T | null; error: unknown }>, attempts = 4): Promise<{ data: T | null; error: unknown }> => {
+    let lastErr: unknown = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fn();
+        if (!res.error) return res;
+        lastErr = res.error;
+      } catch (e) {
+        lastErr = e;
+      }
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+    return { data: null, error: lastErr };
+  };
+
   const fetchCodes = useCallback(async () => {
     setLoadingCodes(true);
-    const { data, error } = await supabase.from('invite_codes').select('id, code, is_used, created_at, used_at, expires_at, disabled').order('created_at', { ascending: false });
-    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    const { data, error } = await withRetry<InviteCode[]>(() => supabase.from('invite_codes').select('id, code, is_used, created_at, used_at, expires_at, disabled').order('created_at', { ascending: false }) as unknown as Promise<{ data: InviteCode[] | null; error: unknown }>);
+    if (error) toast({ title: t('common.error'), description: (error as Error)?.message || String(error), variant: 'destructive' });
     else setInviteCodes(data || []);
     setLoadingCodes(false);
   }, [t]);
 
   const fetchUsers = useCallback(async () => {
     setLoadingUsers(true);
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    const { data, error } = await withRetry<Profile[]>(() => supabase.from('profiles').select('*').order('created_at', { ascending: false }) as unknown as Promise<{ data: Profile[] | null; error: unknown }>);
+    if (error) toast({ title: t('common.error'), description: (error as Error)?.message || String(error), variant: 'destructive' });
     else setUsers(data || []);
     setLoadingUsers(false);
   }, [t]);
 
   const fetchDocuments = useCallback(async () => {
     setLoadingDocs(true);
-    const { data, error } = await supabase.from('documents').select('id, user_id, original_filename, file_type, extracted_text, generated_objection, created_at').order('created_at', { ascending: false });
-    if (error) toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+    const { data, error } = await withRetry<Document[]>(() => supabase.from('documents').select('id, user_id, original_filename, file_type, extracted_text, generated_objection, created_at').order('created_at', { ascending: false }) as unknown as Promise<{ data: Document[] | null; error: unknown }>);
+    if (error) toast({ title: t('common.error'), description: (error as Error)?.message || String(error), variant: 'destructive' });
     else setDocuments(data || []);
     setLoadingDocs(false);
   }, [t]);
