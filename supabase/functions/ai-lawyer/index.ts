@@ -41,9 +41,17 @@ Deno.serve(async (req) => {
     const question: string = (body.question ?? "").toString().trim();
     const documentText: string = (body.documentText ?? "").toString().trim();
     const language: string = ["kk", "ru", "en"].includes(body.language) ? body.language : "kk";
+    const mode: string = body.mode === "generate" ? "generate" : "consult";
+    const docType: string = (body.docType ?? "").toString();
+    const fields = (body.fields ?? {}) as Record<string, string>;
 
-    if (!documentText && !question) {
+    if (mode === "consult" && !documentText && !question) {
       return new Response(JSON.stringify({ error: "Empty input" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (mode === "generate" && !docType) {
+      return new Response(JSON.stringify({ error: "Missing docType" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -70,10 +78,35 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
     const truncatedDoc = documentText.slice(0, 12000);
-    const userContent = [
-      truncatedDoc ? `Құжат мәтіні / Document:\n"""\n${truncatedDoc}\n"""` : "",
-      question ? `Сұрақ / Question: ${question}` : "Құжатты талда және кеңес бер. / Analyze the document and advise.",
-    ].filter(Boolean).join("\n\n");
+
+    const DOC_TYPE_LABELS: Record<string, string> = {
+      objection_executive: "Возражение на исполнительную надпись нотариуса",
+      restructuring: "Заявление о реструктуризации задолженности",
+      penalty_reduction: "Заявление об уменьшении неустойки (пени)",
+      collector_complaint: "Жалоба на действия коллекторского агентства",
+      financial_complaint: "Жалоба в финансовую организацию (банк/МФО)",
+      court_claim: "Исковое заявление в суд",
+    };
+
+    const GENERATE_SYSTEM: Record<string, string> = {
+      kk: `Сен — ҚР заңнамасы бойынша білікті заңгерсің. Пайдаланушы берген деректер негізінде толық, ресми, дайын ҚҰЖАТ мәтінін жаз. Жауапта тек құжаттың өзін бер (түсініктемесіз, markdown белгілерсіз). Құрылым: жоғарғы оң жақта адресат пен арыз иесінің деректері, ортасында тақырып бас әріптермен, дәлелдеу бөлімінде ҚР заң баптарына нақты сілтемелер, төменде сұраныс ("СҰРАЙМЫН"), қосымшалар тізімі, күні мен қол қою орны. Жетіспейтін деректерді [квадрат жақшаға] қой.`,
+      ru: `Ты — квалифицированный юрист по законодательству РК. На основе данных пользователя составь полный, официальный, готовый к подаче ДОКУМЕНТ. В ответе верни только сам документ без пояснений и markdown-разметки. Структура: справа вверху — адресат и данные заявителя; по центру — заголовок ЗАГЛАВНЫМИ; мотивировочная часть со ссылками на конкретные статьи законов РК; «ПРОШУ»; перечень приложений; дата и место для подписи. Недостающие данные оставляй в [квадратных скобках].`,
+      en: `You are a qualified lawyer in Kazakhstan law. Based on the user's data, draft a complete, official, ready-to-file DOCUMENT. Return only the document text, no markdown, no commentary. Structure: top-right addressee and applicant data, centered title in CAPS, reasoning with specific references to RK law articles, a "REQUEST" section, list of attachments, date and signature line. Put missing data in [square brackets].`,
+    };
+
+    const fieldsText = Object.entries(fields)
+      .filter(([, v]) => v && String(v).trim())
+      .map(([k, v]) => `- ${k}: ${v}`)
+      .join("\n");
+
+    const userContent = mode === "generate"
+      ? `Құжат түрі / Тип документа: ${DOC_TYPE_LABELS[docType] ?? docType}\n\nДанные заявителя:\n${fieldsText || "(нет)"}\n\n${truncatedDoc ? `Доп. контекст:\n"""\n${truncatedDoc}\n"""` : ""}`
+      : [
+          truncatedDoc ? `Құжат мәтіні / Document:\n"""\n${truncatedDoc}\n"""` : "",
+          question ? `Сұрақ / Question: ${question}` : "Құжатты талда және кеңес бер. / Analyze the document and advise.",
+        ].filter(Boolean).join("\n\n");
+
+    const systemPrompt = mode === "generate" ? GENERATE_SYSTEM[language] : SYSTEM_PROMPTS[language];
 
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -84,7 +117,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPTS[language] },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
       }),
