@@ -280,6 +280,34 @@ export const kk = {
     'aiLawyer.answer': 'AI жауабы',
     'aiLawyer.history': 'Соңғы консультациялар',
 
+    // Document Generator
+    'docGen.title': 'Құжат генераторы',
+    'docGen.subtitle': 'Деректеріңізді енгізіңіз — AI сізге дайын ресми құжатты жазады.',
+    'docGen.docType': 'Құжат түрі',
+    'docGen.types.objection_executive': 'Атқарушы жазбаға қарсылық',
+    'docGen.types.restructuring': 'Реструктуризация туралы өтініш',
+    'docGen.types.penalty_reduction': 'Пеняны азайту туралы өтініш',
+    'docGen.types.collector_complaint': 'Коллекторға шағым',
+    'docGen.types.financial_complaint': 'Қаржы ұйымына шағым',
+    'docGen.types.court_claim': 'Сотқа талап арыз',
+    'docGen.fields.fullName': 'Аты-жөні (Т.А.Ә.)',
+    'docGen.fields.iin': 'ЖСН (ИИН)',
+    'docGen.fields.address': 'Мекенжай',
+    'docGen.fields.phone': 'Телефон',
+    'docGen.fields.email': 'Email',
+    'docGen.fields.creditor': 'Кредитор / Қарсы тарап',
+    'docGen.fields.contractNumber': 'Шарт нөмірі',
+    'docGen.fields.contractDate': 'Шарт күні',
+    'docGen.fields.amount': 'Сома (теңге)',
+    'docGen.fields.details': 'Жағдайды сипаттаңыз',
+    'docGen.detailsPlaceholder': 'Жағдайдың қысқаша мән-жайын жазыңыз...',
+    'docGen.generate': 'Құжатты жасау',
+    'docGen.generating': 'Жасалуда...',
+    'docGen.ready': 'Құжат дайын!',
+    'docGen.print': 'Басып шығару',
+    'docGen.errFullName': 'Аты-жөніңізді енгізіңіз',
+
+
 
     // Theme
     'theme.dark': 'Қараңғы режим',
