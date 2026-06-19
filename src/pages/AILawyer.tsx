@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { extractTextFromPDF } from '@/utils/pdfParser';
 import { extractTextFromImage } from '@/utils/imageOcr';
+import { DocumentGenerator } from '@/components/DocumentGenerator';
 
 const DAILY_LIMIT = 5;
 
@@ -221,6 +222,8 @@ const AILawyer = () => {
               </CardContent>
             </Card>
           )}
+
+          <DocumentGenerator onGenerated={loadUsage} />
 
           {history.length > 0 && (
             <Card className="animate-fade-in">
