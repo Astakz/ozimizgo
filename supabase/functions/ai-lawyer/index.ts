@@ -144,9 +144,13 @@ Deno.serve(async (req) => {
     const aiJson = await aiResp.json();
     const answer: string = aiJson.choices?.[0]?.message?.content ?? "";
 
+    const logQuestion = mode === "generate"
+      ? `[GENERATE] ${docType}`
+      : (question || "(құжатты талдау)");
+
     await supabase.from("ai_consultations").insert({
       user_id: user.id,
-      question: question || "(құжатты талдау)",
+      question: logQuestion,
       answer,
       document_excerpt: truncatedDoc.slice(0, 2000) || null,
       language,
