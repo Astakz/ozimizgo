@@ -141,6 +141,8 @@ const AILawyer = () => {
             </Badge>
           </div>
 
+          <LawyerChat />
+
           <Card className="shadow-elevated animate-fade-in">
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">{t('aiLawyer.questionLabel')}</CardTitle>
