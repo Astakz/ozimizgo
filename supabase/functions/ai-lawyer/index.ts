@@ -215,7 +215,9 @@ RULES:
 
     const logQuestion = mode === "generate"
       ? `[GENERATE] ${docType}`
-      : (question || "(құжатты талдау)");
+      : mode === "chat"
+        ? `[CHAT] ${(messages[messages.length - 1]?.content ?? "").toString().slice(0, 500)}`
+        : (question || "(құжатты талдау)");
 
     await supabase.from("ai_consultations").insert({
       user_id: user.id,
