@@ -280,6 +280,14 @@ export const kk = {
     'aiLawyer.answer': 'AI жауабы',
     'aiLawyer.history': 'Соңғы консультациялар',
 
+    'lawyerChat.title': 'AI-заңгер чаты',
+    'lawyerChat.placeholder': 'Мәселеңізді жазыңыз...',
+    'lawyerChat.typing': 'Заңгер ойланып жатыр...',
+    'lawyerChat.reset': 'Жаңа сұхбат',
+    'lawyerChat.readyDoc': 'Дайын құжат',
+    'lawyerChat.sigHint': 'Төменде қол қойыңыз, содан соң құжаттағы орынды сүйреп қалаған жеріңізге қойыңыз.',
+    'lawyerChat.disclaimer': 'AI-заңгер ҚР заңнамасы бойынша көмек көрсетеді. Маңызды істерде маманмен кеңесіңіз.',
+
     // Document Generator
     'docGen.title': 'Құжат генераторы',
     'docGen.subtitle': 'Деректеріңізді енгізіңіз — AI сізге дайын ресми құжатты жазады.',
