@@ -41,12 +41,19 @@ Deno.serve(async (req) => {
     const question: string = (body.question ?? "").toString().trim();
     const documentText: string = (body.documentText ?? "").toString().trim();
     const language: string = ["kk", "ru", "en"].includes(body.language) ? body.language : "kk";
-    const mode: string = body.mode === "generate" ? "generate" : "consult";
+    const allowedModes = ["consult", "generate", "chat"];
+    const mode: string = allowedModes.includes(body.mode) ? body.mode : "consult";
     const docType: string = (body.docType ?? "").toString();
     const fields = (body.fields ?? {}) as Record<string, string>;
+    const messages = Array.isArray(body.messages) ? body.messages : [];
 
     if (mode === "consult" && !documentText && !question) {
       return new Response(JSON.stringify({ error: "Empty input" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (mode === "chat" && messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Empty messages" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
