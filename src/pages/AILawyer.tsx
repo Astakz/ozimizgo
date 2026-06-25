@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { extractTextFromPDF } from '@/utils/pdfParser';
 import { extractTextFromImage } from '@/utils/imageOcr';
 import { DocumentGenerator } from '@/components/DocumentGenerator';
+import { LawyerChat } from '@/components/LawyerChat';
 
 const DAILY_LIMIT = 5;
 
@@ -139,6 +140,8 @@ const AILawyer = () => {
               {t('aiLawyer.usage', { used: usedToday, limit: DAILY_LIMIT })}
             </Badge>
           </div>
+
+          <LawyerChat />
 
           <Card className="shadow-elevated animate-fade-in">
             <CardHeader>

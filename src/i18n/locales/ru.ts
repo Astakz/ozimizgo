@@ -282,6 +282,14 @@ export const ru = {
     'aiLawyer.answer': 'Ответ AI',
     'aiLawyer.history': 'Последние консультации',
 
+    'lawyerChat.title': 'Чат AI-юриста',
+    'lawyerChat.placeholder': 'Опишите вашу проблему...',
+    'lawyerChat.typing': 'Юрист печатает...',
+    'lawyerChat.reset': 'Новый диалог',
+    'lawyerChat.readyDoc': 'Готовый документ',
+    'lawyerChat.sigHint': 'Поставьте подпись ниже, затем перетащите её в нужное место документа.',
+    'lawyerChat.disclaimer': 'AI-юрист помогает по законодательству РК. По важным делам обратитесь к специалисту.',
+
     // Document Generator
     'docGen.title': 'Генератор документов',
     'docGen.subtitle': 'Введите данные — AI составит готовый официальный документ.',

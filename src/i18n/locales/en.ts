@@ -280,6 +280,14 @@ export const en = {
     'aiLawyer.answer': 'AI response',
     'aiLawyer.history': 'Recent consultations',
 
+    'lawyerChat.title': 'AI lawyer chat',
+    'lawyerChat.placeholder': 'Describe your issue...',
+    'lawyerChat.typing': 'Lawyer is typing...',
+    'lawyerChat.reset': 'New chat',
+    'lawyerChat.readyDoc': 'Ready document',
+    'lawyerChat.sigHint': 'Sign below, then drag the signature to any position on the document.',
+    'lawyerChat.disclaimer': 'AI lawyer assists with RK legislation. For important matters consult a licensed lawyer.',
+
     // Document Generator
     'docGen.title': 'Document Generator',
     'docGen.subtitle': 'Provide your details — the AI drafts a ready-to-file official document.',
