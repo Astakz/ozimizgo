@@ -288,6 +288,7 @@ export const ru = {
     'lawyerChat.reset': 'Новый диалог',
     'lawyerChat.readyDoc': 'Готовый документ',
     'lawyerChat.sigHint': 'Поставьте подпись ниже, затем перетащите её в нужное место документа.',
+    'lawyerChat.attach': 'Прикрепить файл',
     'lawyerChat.disclaimer': 'AI-юрист помогает по законодательству РК. По важным делам обратитесь к специалисту.',
 
     // Document Generator

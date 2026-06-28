@@ -286,6 +286,7 @@ export const kk = {
     'lawyerChat.reset': 'Жаңа сұхбат',
     'lawyerChat.readyDoc': 'Дайын құжат',
     'lawyerChat.sigHint': 'Төменде қол қойыңыз, содан соң құжаттағы орынды сүйреп қалаған жеріңізге қойыңыз.',
+    'lawyerChat.attach': 'Файл тіркеу',
     'lawyerChat.disclaimer': 'AI-заңгер ҚР заңнамасы бойынша көмек көрсетеді. Маңызды істерде маманмен кеңесіңіз.',
 
     // Document Generator
