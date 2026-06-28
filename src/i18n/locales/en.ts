@@ -286,6 +286,7 @@ export const en = {
     'lawyerChat.reset': 'New chat',
     'lawyerChat.readyDoc': 'Ready document',
     'lawyerChat.sigHint': 'Sign below, then drag the signature to any position on the document.',
+    'lawyerChat.attach': 'Attach file',
     'lawyerChat.disclaimer': 'AI lawyer assists with RK legislation. For important matters consult a licensed lawyer.',
 
     // Document Generator

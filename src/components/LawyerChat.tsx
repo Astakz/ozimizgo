@@ -1,19 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Loader2, Send, Download, FileText, RotateCcw, User as UserIcon, Bot } from 'lucide-react';
+import { Loader2, Send, Download, FileText, RotateCcw, User as UserIcon, Bot, Paperclip, X, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SignaturePad } from '@/components/SignaturePad';
+import { extractTextFromPDF } from '@/utils/pdfParser';
+import { extractTextFromImage } from '@/utils/imageOcr';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 const DAILY_LIMIT = 5;
 
-type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string };
+type Attachment = { name: string; text: string };
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  attachment?: Attachment;
+};
 
 const DOC_START = '===DOCUMENT_START===';
 const DOC_END = '===DOCUMENT_END===';
@@ -29,9 +36,13 @@ function extractDocument(text: string): { before: string; doc: string | null; af
   };
 }
 
+function isImage(file: File) {
+  return /^image\//.test(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+}
+
 interface SigState { x: number; y: number; dragging: boolean; offsetX: number; offsetY: number }
 
-function DocumentPreview({ text, language }: { text: string; language: string }) {
+function DocumentPreview({ text }: { text: string }) {
   const { t } = useTranslation();
   const [signature, setSignature] = useState<string | null>(null);
   const [sig, setSig] = useState<SigState>({ x: 60, y: 0, dragging: false, offsetX: 0, offsetY: 0 });
@@ -48,7 +59,6 @@ function DocumentPreview({ text, language }: { text: string; language: string })
     return () => ro.disconnect();
   }, [text]);
 
-  // Initial signature position: lower part of doc
   useEffect(() => {
     if (signature && sheetH > 0 && sig.y === 0) {
       setSig((s) => ({ ...s, y: Math.max(0, sheetH - 140) }));
@@ -187,22 +197,31 @@ function DocumentPreview({ text, language }: { text: string; language: string })
   );
 }
 
-export function LawyerChat() {
+interface LawyerChatProps {
+  usedToday: number;
+  onUsageChange?: (used: number) => void;
+}
+
+export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
   const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [usedToday, setUsedToday] = useState(0);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingText, setPendingText] = useState('');
+  const [extracting, setExtracting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   const greetings: Record<string, string> = {
-    kk: 'Сәлеметсіз бе! Мен — сіздің AI-заңгеріңізбін. Қандай заңдық мәселе бойынша көмек қажет? Қысқаша өз жағдайыңызды баяндап жіберіңізші.',
-    ru: 'Здравствуйте! Я — ваш AI-юрист. По какому правовому вопросу вам нужна помощь? Опишите, пожалуйста, кратко свою ситуацию.',
-    en: "Hello! I'm your AI lawyer. What legal matter can I help you with? Please briefly describe your situation.",
+    kk: 'Сәлеметсіз бе! Мен сіздің AI-заңгеріңізбін. Мәселеңізді жазыңыз немесе құжатты тіркеңіз — Қазақстан Республикасының заңнамасына сәйкес көмектесемін.',
+    ru: 'Здравствуйте! Я — ваш AI-юрист. Опишите вашу ситуацию или прикрепите документ, и я помогу вам в соответствии с законодательством Республики Казахстан.',
+    en: "Hello! I'm your AI lawyer. Describe your situation or attach a document and I'll help you under the laws of the Republic of Kazakhstan.",
   };
 
   useEffect(() => {
-    setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.kk }]);
+    setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.ru }]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language]);
 
@@ -210,24 +229,75 @@ export function LawyerChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
+  useEffect(() => {
+    taRef.current?.focus();
+  }, []);
+
+  const handleFile = async (f: File) => {
+    if (!/\.(pdf|jpe?g|png)$/i.test(f.name) && !/^(application\/pdf|image\/)/.test(f.type)) {
+      toast.error(t('common.error'));
+      return;
+    }
+    setPendingFile(f);
+    setExtracting(true);
+    try {
+      const text = isImage(f) ? await extractTextFromImage(f) : await extractTextFromPDF(f);
+      setPendingText(text);
+    } catch (e) {
+      console.error(e);
+      toast.error(t('common.error'));
+      setPendingFile(null);
+      setPendingText('');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const clearPending = () => {
+    setPendingFile(null);
+    setPendingText('');
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if ((!text && !pendingFile) || loading || extracting) return;
     if (usedToday >= DAILY_LIMIT) {
       toast.error(t('aiLawyer.limitReached'));
       return;
     }
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: text };
+
+    const attachment: Attachment | undefined = pendingFile
+      ? { name: pendingFile.name, text: pendingText }
+      : undefined;
+
+    const displayContent = text || (attachment ? `📄 ${attachment.name}` : '');
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: displayContent,
+      attachment,
+    };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput('');
+    clearPending();
     setLoading(true);
     try {
       const payload = next
         .filter((m) => m.id !== 'sys-greet')
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => {
+          if (m.role === 'user' && m.attachment) {
+            const body = m.content && m.content !== `📄 ${m.attachment.name}` ? m.content : '';
+            return {
+              role: 'user' as const,
+              content: `${body ? body + '\n\n' : ''}[Тіркелген құжат / Attached document: ${m.attachment.name}]\n"""\n${m.attachment.text.slice(0, 12000)}\n"""`,
+            };
+          }
+          return { role: m.role, content: m.content };
+        });
       const { data, error } = await supabase.functions.invoke('ai-lawyer', {
-        body: { mode: 'chat', messages: payload, language: i18n.language },
+        body: { mode: 'chat', messages: payload, language: 'auto' },
       });
       if (error) {
         const ctx: any = (error as any).context;
@@ -236,63 +306,62 @@ export function LawyerChat() {
         return;
       }
       setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', content: data.answer ?? '' }]);
-      if (typeof data.used === 'number') setUsedToday(data.used);
+      if (typeof data.used === 'number') onUsageChange?.(data.used);
     } catch (e) {
       console.error(e);
       toast.error(t('common.error'));
     } finally {
       setLoading(false);
+      setTimeout(() => taRef.current?.focus(), 0);
     }
-  }, [input, loading, messages, usedToday, i18n.language, t]);
+  }, [input, loading, extracting, messages, usedToday, pendingFile, pendingText, t, onUsageChange]);
 
   const reset = () => {
-    setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.kk }]);
+    setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.ru }]);
     setInput('');
+    clearPending();
   };
 
   const remaining = DAILY_LIMIT - usedToday;
 
   return (
-    <Card className="shadow-elevated overflow-hidden">
-      <div className="navy-gradient text-primary-foreground p-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-gold" />
-          <span className="font-semibold">{t('lawyerChat.title')}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={remaining > 0 ? 'secondary' : 'destructive'}>
-            {t('aiLawyer.usage', { used: usedToday, limit: DAILY_LIMIT })}
-          </Badge>
-          <Button size="icon" variant="ghost" onClick={reset} className="text-primary-foreground hover:bg-white/10 h-8 w-8" title={t('lawyerChat.reset')}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
+    <Card className="shadow-elevated overflow-hidden flex flex-col">
+      <div className="border-b px-4 py-2 flex items-center justify-end bg-background">
+        <Button size="sm" variant="ghost" onClick={reset} title={t('lawyerChat.reset')}>
+          <RotateCcw className="h-4 w-4 mr-1" /> {t('lawyerChat.reset')}
+        </Button>
       </div>
 
-      <div ref={scrollRef} className="max-h-[60vh] overflow-y-auto p-3 sm:p-4 space-y-4 bg-muted/20">
+      <div ref={scrollRef} className="h-[60vh] overflow-y-auto p-3 sm:p-5 space-y-5 bg-muted/10">
         {messages.map((m) => {
           const { before, doc, after } = m.role === 'assistant'
             ? extractDocument(m.content)
             : { before: m.content, doc: null, after: '' };
           const isUser = m.role === 'user';
           return (
-            <div key={m.id} className={`flex gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
+            <div key={m.id} className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
               <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${isUser ? 'bg-primary text-primary-foreground' : 'bg-gold/20 text-gold'}`}>
                 {isUser ? <UserIcon className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
               </div>
-              <div className={`flex-1 max-w-[85%] ${isUser ? 'flex flex-col items-end' : ''}`}>
+              <div className={`flex-1 max-w-[85%] space-y-2 ${isUser ? 'flex flex-col items-end' : ''}`}>
+                {isUser && m.attachment && (
+                  <div className="inline-flex items-center gap-2 text-xs px-3 py-2 rounded-xl border bg-card">
+                    <FileText className="h-4 w-4 text-gold" />
+                    <span className="font-medium truncate max-w-[200px]">{m.attachment.name}</span>
+                  </div>
+                )}
                 {before && (
-                  <div className={`px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm sm:text-base ${isUser ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-card border rounded-tl-sm'}`}>
+                  <div className={`px-4 py-2.5 rounded-2xl whitespace-pre-wrap text-sm sm:text-base leading-relaxed ${isUser ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-card border rounded-tl-sm'}`}>
                     {before}
                   </div>
                 )}
                 {doc && (
-                  <div className="mt-3 w-full">
-                    <DocumentPreview text={doc} language={i18n.language} />
+                  <div className="w-full">
+                    <DocumentPreview text={doc} />
                   </div>
                 )}
                 {after && (
-                  <div className="mt-2 px-3 py-2 rounded-2xl bg-card border text-sm sm:text-base whitespace-pre-wrap">
+                  <div className="px-4 py-2.5 rounded-2xl bg-card border text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
                     {after}
                   </div>
                 )}
@@ -301,7 +370,7 @@ export function LawyerChat() {
           );
         })}
         {loading && (
-          <div className="flex gap-2 items-center text-muted-foreground text-sm">
+          <div className="flex gap-3 items-center text-muted-foreground text-sm">
             <div className="h-8 w-8 rounded-full bg-gold/20 flex items-center justify-center">
               <Bot className="h-4 w-4 text-gold" />
             </div>
@@ -310,9 +379,42 @@ export function LawyerChat() {
         )}
       </div>
 
-      <div className="border-t p-3 bg-background">
-        <div className="flex gap-2 items-end">
+      <div className="border-t bg-background p-3 space-y-2">
+        {pendingFile && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/40">
+            <FileText className="h-4 w-4 text-gold shrink-0" />
+            <span className="text-sm truncate flex-1">{pendingFile.name}</span>
+            {extracting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            )}
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearPending}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        <div className="flex items-end gap-2 rounded-2xl border bg-card p-2 focus-within:ring-2 focus-within:ring-ring/50 transition">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,image/jpeg,image/jpg,image/png"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0"
+            onClick={() => fileRef.current?.click()}
+            disabled={loading || extracting || !!pendingFile}
+            title={t('lawyerChat.attach')}
+          >
+            <Paperclip className="h-5 w-5" />
+          </Button>
           <Textarea
+            ref={taRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -322,15 +424,21 @@ export function LawyerChat() {
               }
             }}
             placeholder={t('lawyerChat.placeholder')}
-            rows={2}
+            rows={1}
             disabled={loading || remaining <= 0}
-            className="flex-1 resize-none"
+            className="flex-1 resize-none border-0 focus-visible:ring-0 shadow-none px-1 py-2 min-h-[40px] max-h-40 bg-transparent"
           />
-          <Button onClick={send} disabled={loading || !input.trim() || remaining <= 0} className="gold-button h-auto py-3">
+          <Button
+            type="button"
+            size="icon"
+            onClick={send}
+            disabled={loading || extracting || (!input.trim() && !pendingFile) || remaining <= 0}
+            className="gold-button h-9 w-9 shrink-0 rounded-xl"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2 italic">{t('lawyerChat.disclaimer')}</p>
+        <p className="text-[11px] text-muted-foreground text-center italic">{t('lawyerChat.disclaimer')}</p>
       </div>
     </Card>
   );
