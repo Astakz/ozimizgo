@@ -506,7 +506,7 @@ const Admin = () => {
                       <TableHead>{t('admin.name')}</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Статус</TableHead>
-                      <TableHead>Осталось</TableHead>
+                      <TableHead>AI-доступ</TableHead>
                       <TableHead>{t('admin.regDate')}</TableHead>
                       <TableHead className="text-right">{t('admin.actions')}</TableHead>
                     </TableRow></TableHeader>
@@ -514,6 +514,8 @@ const Admin = () => {
                       {users.map((u) => {
                         const blockedMs = u.blocked_until ? new Date(u.blocked_until).getTime() - Date.now() : 0;
                         const isBlocked = blockedMs > 0;
+                        const unlExp = u.ai_unlimited_expires_at ? new Date(u.ai_unlimited_expires_at) : null;
+                        const isUnlimited = !!u.ai_unlimited_access && (!unlExp || unlExp.getTime() > Date.now());
                         return (
                           <TableRow key={u.id} className={isBlocked ? 'bg-destructive/5' : undefined}>
                             <TableCell className="font-medium">{u.name || '—'}</TableCell>
@@ -522,15 +524,26 @@ const Admin = () => {
                               {isBlocked
                                 ? <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" />blocked</Badge>
                                 : <Badge variant="default" className="gap-1">active</Badge>}
+                              {isBlocked && (
+                                <div className="mt-1"><span className="font-mono text-[11px] tabular-nums text-destructive">{formatRemaining(blockedMs)}</span></div>
+                              )}
                             </TableCell>
                             <TableCell>
-                              {isBlocked
-                                ? <span className="font-mono text-sm tabular-nums text-destructive">{formatRemaining(blockedMs)}</span>
-                                : <span className="text-muted-foreground text-sm">—</span>}
+                              {isUnlimited ? (
+                                <div className="space-y-0.5">
+                                  <Badge variant="secondary" className="gap-1 bg-emerald-500/15 text-emerald-600 border-emerald-500/30">
+                                    <InfinityIcon className="w-3 h-3" /> Unlimited
+                                  </Badge>
+                                  {unlExp && <div className="text-[11px] text-muted-foreground">до {unlExp.toLocaleString('ru-RU')}</div>}
+                                </div>
+                              ) : (
+                                <span className="text-sm tabular-nums">Limit: {u.ai_daily_limit ?? 5}/день</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 flex-wrap">
+                                <Button variant="ghost" size="icon" title="AI Access" onClick={() => openAi(u)}><Sparkles className="w-4 h-4 text-gold" /></Button>
                                 {isBlocked ? (
                                   <>
                                     <Button variant="ghost" size="icon" title="Изменить срок блокировки" onClick={() => openBan(u)}><Pencil className="w-4 h-4" /></Button>
