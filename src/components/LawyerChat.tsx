@@ -316,7 +316,7 @@ export function LawyerChat({ usedToday, dailyLimit = DEFAULT_DAILY_LIMIT, unlimi
       setLoading(false);
       setTimeout(() => taRef.current?.focus(), 0);
     }
-  }, [input, loading, extracting, messages, usedToday, pendingFile, pendingText, t, onUsageChange]);
+  }, [input, loading, extracting, messages, usedToday, dailyLimit, unlimited, pendingFile, pendingText, t, onUsageChange]);
 
   const reset = () => {
     setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.ru }]);
