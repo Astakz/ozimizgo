@@ -713,6 +713,79 @@ const Admin = () => {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* AI Access dialog */}
+        <Dialog open={!!aiTarget} onOpenChange={(o) => !o && setAiTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-gold" /> AI Access</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">{aiTarget?.email}</div>
+
+              <div className="rounded-md border p-3 space-y-1 bg-muted/30">
+                <div className="text-xs text-muted-foreground">Сегодня использовано</div>
+                <div className="font-mono text-lg tabular-nums">
+                  {aiUsedToday} / {aiUnlimited ? '∞' : (parseInt(aiDailyLimit, 10) || 0)}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Daily Limit (запросов/день)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={aiDailyLimit}
+                  onChange={(e) => setAiDailyLimit(e.target.value)}
+                  disabled={aiUnlimited}
+                />
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {[5, 10, 50, 100, 500, 1000, 100000].map((n) => (
+                    <Button
+                      key={n}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={aiUnlimited}
+                      onClick={() => setAiDailyLimit(String(n))}
+                    >{n}</Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <div className="font-medium text-sm flex items-center gap-1.5"><InfinityIcon className="w-4 h-4 text-emerald-600" /> Unlimited Access</div>
+                  <div className="text-xs text-muted-foreground">Полностью отключает дневной лимит</div>
+                </div>
+                <Switch checked={aiUnlimited} onCheckedChange={setAiUnlimited} />
+              </div>
+
+              {aiUnlimited && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Действует до (пусто = бессрочно)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={aiExpiresAt}
+                    onChange={(e) => setAiExpiresAt(e.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(1)}>1 день</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(7)}>7 дней</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(30)}>30 дней</Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setAiExpiresAt('')}>Бессрочно</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAiTarget(null)} disabled={aiSubmitting}>Отмена</Button>
+              <Button onClick={saveAi} disabled={aiSubmitting} className="gold-button">
+                {aiSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   );
