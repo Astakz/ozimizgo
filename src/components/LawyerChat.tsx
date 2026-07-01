@@ -12,7 +12,7 @@ import { extractTextFromImage } from '@/utils/imageOcr';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-const DAILY_LIMIT = 5;
+const DEFAULT_DAILY_LIMIT = 5;
 
 type Attachment = { name: string; text: string };
 type ChatMessage = {
@@ -199,10 +199,12 @@ function DocumentPreview({ text }: { text: string }) {
 
 interface LawyerChatProps {
   usedToday: number;
+  dailyLimit?: number;
+  unlimited?: boolean;
   onUsageChange?: (used: number) => void;
 }
 
-export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
+export function LawyerChat({ usedToday, dailyLimit = DEFAULT_DAILY_LIMIT, unlimited = false, onUsageChange }: LawyerChatProps) {
   const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -262,7 +264,7 @@ export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
   const send = useCallback(async () => {
     const text = input.trim();
     if ((!text && !pendingFile) || loading || extracting) return;
-    if (usedToday >= DAILY_LIMIT) {
+    if (!unlimited && usedToday >= dailyLimit) {
       toast.error(t('aiLawyer.limitReached'));
       return;
     }
@@ -314,7 +316,7 @@ export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
       setLoading(false);
       setTimeout(() => taRef.current?.focus(), 0);
     }
-  }, [input, loading, extracting, messages, usedToday, pendingFile, pendingText, t, onUsageChange]);
+  }, [input, loading, extracting, messages, usedToday, dailyLimit, unlimited, pendingFile, pendingText, t, onUsageChange]);
 
   const reset = () => {
     setMessages([{ id: 'sys-greet', role: 'assistant', content: greetings[i18n.language] ?? greetings.ru }]);
@@ -322,7 +324,7 @@ export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
     clearPending();
   };
 
-  const remaining = DAILY_LIMIT - usedToday;
+  const remaining = unlimited ? Infinity : dailyLimit - usedToday;
 
   return (
     <Card className="shadow-elevated overflow-hidden flex flex-col">

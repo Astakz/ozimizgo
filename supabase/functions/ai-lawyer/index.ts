@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const DAILY_LIMIT = 5;
+const DEFAULT_DAILY_LIMIT = 5;
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   kk: `Сен — Қазақстан Республикасының заңнамасы бойынша білікті AI заңгерсің. Пайдаланушы құжатын (мысалы, нотариустың атқарушы жазбасы, шарт, шағым) талдап, ҚР заңдарына сілтеме жасап, түсінікті әрі құрылымды кеңес бер. Жауапты қазақ тілінде, Markdown форматында бер: қысқа қорытынды, негізгі тәуекелдер, ұсынылатын әрекеттер, тиісті ҚР заң баптары. Заңды кеңес — ақпараттық сипатта, ресми құжат емес екенін ескерт.`,
@@ -63,7 +63,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Daily limit check (UTC day)
+    // Load user AI access settings
+    const { data: profile, error: profErr } = await supabase
+      .from("profiles")
+      .select("ai_daily_limit, ai_unlimited_access, ai_unlimited_expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (profErr) console.error("profile err", profErr);
+
+    let unlimited = !!profile?.ai_unlimited_access;
+    const unlimitedExp = profile?.ai_unlimited_expires_at ? new Date(profile.ai_unlimited_expires_at) : null;
+
+    // Auto-expire unlimited access
+    if (unlimited && unlimitedExp && unlimitedExp.getTime() <= Date.now()) {
+      unlimited = false;
+      await supabase
+        .from("profiles")
+        .update({ ai_unlimited_access: false, ai_unlimited_expires_at: null })
+        .eq("user_id", user.id);
+    }
+
+    const dailyLimit = typeof profile?.ai_daily_limit === "number" ? profile.ai_daily_limit : DEFAULT_DAILY_LIMIT;
+
+    // Daily used count (UTC day) — auto-resets at 00:00 UTC
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
     const { count, error: countErr } = await supabase
@@ -74,10 +96,11 @@ Deno.serve(async (req) => {
 
     if (countErr) console.error("count err", countErr);
     const used = count ?? 0;
-    if (used >= DAILY_LIMIT) {
+
+    if (!unlimited && used >= dailyLimit) {
       return new Response(JSON.stringify({
         error: "daily_limit",
-        used, limit: DAILY_LIMIT,
+        used, limit: dailyLimit, unlimited: false,
       }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -256,8 +279,10 @@ RULES:
     return new Response(JSON.stringify({
       answer,
       used: used + 1,
-      limit: DAILY_LIMIT,
-      remaining: DAILY_LIMIT - used - 1,
+      limit: dailyLimit,
+      remaining: unlimited ? null : Math.max(0, dailyLimit - used - 1),
+      unlimited,
+      unlimitedExpiresAt: unlimited && unlimitedExp ? unlimitedExp.toISOString() : null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("ai-lawyer error", e);

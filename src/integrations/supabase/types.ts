@@ -316,6 +316,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_daily_limit: number
+          ai_unlimited_access: boolean
+          ai_unlimited_expires_at: string | null
+          ai_updated_at: string | null
+          ai_updated_by: string | null
           avatar_url: string | null
           bio: string | null
           blocked_at: string | null
@@ -334,6 +339,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_daily_limit?: number
+          ai_unlimited_access?: boolean
+          ai_unlimited_expires_at?: string | null
+          ai_updated_at?: string | null
+          ai_updated_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           blocked_at?: string | null
@@ -352,6 +362,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_daily_limit?: number
+          ai_unlimited_access?: boolean
+          ai_unlimited_expires_at?: string | null
+          ai_updated_at?: string | null
+          ai_updated_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           blocked_at?: string | null

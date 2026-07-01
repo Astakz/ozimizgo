@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Power, PowerOff, Pencil, Clock, Ban, ShieldOff, AlertTriangle } from 'lucide-react';
+import { Shield, Plus, Trash2, Users, Key, LogOut, Loader2, Copy, FileStack, Eye, Power, PowerOff, Pencil, Clock, Ban, ShieldOff, AlertTriangle, Sparkles, Infinity as InfinityIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'react-router-dom';
@@ -20,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface InviteCode { id: string; code: string; is_used: boolean; created_at: string; used_at: string | null; expires_at: string | null; disabled: boolean; }
-interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; blocked_until: string | null; blocked_reason: string | null; blocked_at: string | null; }
+interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; blocked_until: string | null; blocked_reason: string | null; blocked_at: string | null; ai_daily_limit: number; ai_unlimited_access: boolean; ai_unlimited_expires_at: string | null; }
 interface Document { id: string; user_id: string; original_filename: string; file_type: string; extracted_text: string; generated_objection: string; created_at: string; }
 
 const DURATION_PRESETS: { label: string; seconds: number }[] = [
@@ -100,6 +101,12 @@ const Admin = () => {
   const [banSubmitting, setBanSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [aiTarget, setAiTarget] = useState<Profile | null>(null);
+  const [aiDailyLimit, setAiDailyLimit] = useState<string>('5');
+  const [aiUnlimited, setAiUnlimited] = useState(false);
+  const [aiExpiresAt, setAiExpiresAt] = useState<string>('');
+  const [aiUsedToday, setAiUsedToday] = useState<number>(0);
+  const [aiSubmitting, setAiSubmitting] = useState(false);
   const [, setNowTick] = useState(0);
 
   useEffect(() => {
@@ -219,6 +226,63 @@ const Admin = () => {
     } finally { setDeleteSubmitting(false); }
   };
 
+
+  const toLocalInput = (iso: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
+  const openAi = async (u: Profile) => {
+    setAiTarget(u);
+    setAiDailyLimit(String(u.ai_daily_limit ?? 5));
+    setAiUnlimited(!!u.ai_unlimited_access);
+    setAiExpiresAt(toLocalInput(u.ai_unlimited_expires_at));
+    setAiUsedToday(0);
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabase
+      .from('ai_consultations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', u.user_id)
+      .gte('created_at', since.toISOString());
+    setAiUsedToday(count ?? 0);
+  };
+
+  const applyUnlimitedPreset = (days: number) => {
+    setAiUnlimited(true);
+    setAiExpiresAt(toLocalInput(new Date(Date.now() + days * 86400000).toISOString()));
+  };
+
+  const saveAi = async () => {
+    if (!aiTarget) return;
+    const limit = parseInt(aiDailyLimit, 10);
+    if (!Number.isFinite(limit) || limit < 0) {
+      toast({ title: 'Ошибка', description: 'Укажите корректный лимит (число ≥ 0)', variant: 'destructive' });
+      return;
+    }
+    setAiSubmitting(true);
+    const expIso = aiUnlimited && aiExpiresAt ? new Date(aiExpiresAt).toISOString() : null;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ai_daily_limit: limit,
+        ai_unlimited_access: aiUnlimited,
+        ai_unlimited_expires_at: aiUnlimited ? expIso : null,
+        ai_updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', aiTarget.user_id);
+    setAiSubmitting(false);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'AI-доступ обновлён' });
+    setAiTarget(null);
+    fetchUsers();
+  };
 
   const resolveSeconds = (preset: string, custom: string): number | null => {
     if (preset === '0') return 0; // no expiry
@@ -442,7 +506,7 @@ const Admin = () => {
                       <TableHead>{t('admin.name')}</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Статус</TableHead>
-                      <TableHead>Осталось</TableHead>
+                      <TableHead>AI-доступ</TableHead>
                       <TableHead>{t('admin.regDate')}</TableHead>
                       <TableHead className="text-right">{t('admin.actions')}</TableHead>
                     </TableRow></TableHeader>
@@ -450,6 +514,8 @@ const Admin = () => {
                       {users.map((u) => {
                         const blockedMs = u.blocked_until ? new Date(u.blocked_until).getTime() - Date.now() : 0;
                         const isBlocked = blockedMs > 0;
+                        const unlExp = u.ai_unlimited_expires_at ? new Date(u.ai_unlimited_expires_at) : null;
+                        const isUnlimited = !!u.ai_unlimited_access && (!unlExp || unlExp.getTime() > Date.now());
                         return (
                           <TableRow key={u.id} className={isBlocked ? 'bg-destructive/5' : undefined}>
                             <TableCell className="font-medium">{u.name || '—'}</TableCell>
@@ -458,15 +524,26 @@ const Admin = () => {
                               {isBlocked
                                 ? <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" />blocked</Badge>
                                 : <Badge variant="default" className="gap-1">active</Badge>}
+                              {isBlocked && (
+                                <div className="mt-1"><span className="font-mono text-[11px] tabular-nums text-destructive">{formatRemaining(blockedMs)}</span></div>
+                              )}
                             </TableCell>
                             <TableCell>
-                              {isBlocked
-                                ? <span className="font-mono text-sm tabular-nums text-destructive">{formatRemaining(blockedMs)}</span>
-                                : <span className="text-muted-foreground text-sm">—</span>}
+                              {isUnlimited ? (
+                                <div className="space-y-0.5">
+                                  <Badge variant="secondary" className="gap-1 bg-emerald-500/15 text-emerald-600 border-emerald-500/30">
+                                    <InfinityIcon className="w-3 h-3" /> Unlimited
+                                  </Badge>
+                                  {unlExp && <div className="text-[11px] text-muted-foreground">до {unlExp.toLocaleString('ru-RU')}</div>}
+                                </div>
+                              ) : (
+                                <span className="text-sm tabular-nums">Limit: {u.ai_daily_limit ?? 5}/день</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm">{new Date(u.created_at).toLocaleDateString('ru-RU')}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 flex-wrap">
+                                <Button variant="ghost" size="icon" title="AI Access" onClick={() => openAi(u)}><Sparkles className="w-4 h-4 text-gold" /></Button>
                                 {isBlocked ? (
                                   <>
                                     <Button variant="ghost" size="icon" title="Изменить срок блокировки" onClick={() => openBan(u)}><Pencil className="w-4 h-4" /></Button>
@@ -635,6 +712,79 @@ const Admin = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* AI Access dialog */}
+        <Dialog open={!!aiTarget} onOpenChange={(o) => !o && setAiTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-gold" /> AI Access</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">{aiTarget?.email}</div>
+
+              <div className="rounded-md border p-3 space-y-1 bg-muted/30">
+                <div className="text-xs text-muted-foreground">Сегодня использовано</div>
+                <div className="font-mono text-lg tabular-nums">
+                  {aiUsedToday} / {aiUnlimited ? '∞' : (parseInt(aiDailyLimit, 10) || 0)}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Daily Limit (запросов/день)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={aiDailyLimit}
+                  onChange={(e) => setAiDailyLimit(e.target.value)}
+                  disabled={aiUnlimited}
+                />
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {[5, 10, 50, 100, 500, 1000, 100000].map((n) => (
+                    <Button
+                      key={n}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={aiUnlimited}
+                      onClick={() => setAiDailyLimit(String(n))}
+                    >{n}</Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div className="space-y-0.5">
+                  <div className="font-medium text-sm flex items-center gap-1.5"><InfinityIcon className="w-4 h-4 text-emerald-600" /> Unlimited Access</div>
+                  <div className="text-xs text-muted-foreground">Полностью отключает дневной лимит</div>
+                </div>
+                <Switch checked={aiUnlimited} onCheckedChange={setAiUnlimited} />
+              </div>
+
+              {aiUnlimited && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Действует до (пусто = бессрочно)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={aiExpiresAt}
+                    onChange={(e) => setAiExpiresAt(e.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(1)}>1 день</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(7)}>7 дней</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => applyUnlimitedPreset(30)}>30 дней</Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setAiExpiresAt('')}>Бессрочно</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAiTarget(null)} disabled={aiSubmitting}>Отмена</Button>
+              <Button onClick={saveAi} disabled={aiSubmitting} className="gold-button">
+                {aiSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </main>
     </div>
