@@ -101,6 +101,12 @@ const Admin = () => {
   const [banSubmitting, setBanSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [aiTarget, setAiTarget] = useState<Profile | null>(null);
+  const [aiDailyLimit, setAiDailyLimit] = useState<string>('5');
+  const [aiUnlimited, setAiUnlimited] = useState(false);
+  const [aiExpiresAt, setAiExpiresAt] = useState<string>('');
+  const [aiUsedToday, setAiUsedToday] = useState<number>(0);
+  const [aiSubmitting, setAiSubmitting] = useState(false);
   const [, setNowTick] = useState(0);
 
   useEffect(() => {
