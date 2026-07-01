@@ -227,7 +227,64 @@ const Admin = () => {
   };
 
 
-  const resolveSeconds = (preset: string, custom: string): number | null => {
+  const toLocalInput = (iso: string | null): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
+  const openAi = async (u: Profile) => {
+    setAiTarget(u);
+    setAiDailyLimit(String(u.ai_daily_limit ?? 5));
+    setAiUnlimited(!!u.ai_unlimited_access);
+    setAiExpiresAt(toLocalInput(u.ai_unlimited_expires_at));
+    setAiUsedToday(0);
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    const { count } = await supabase
+      .from('ai_consultations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', u.user_id)
+      .gte('created_at', since.toISOString());
+    setAiUsedToday(count ?? 0);
+  };
+
+  const applyUnlimitedPreset = (days: number) => {
+    setAiUnlimited(true);
+    setAiExpiresAt(toLocalInput(new Date(Date.now() + days * 86400000).toISOString()));
+  };
+
+  const saveAi = async () => {
+    if (!aiTarget) return;
+    const limit = parseInt(aiDailyLimit, 10);
+    if (!Number.isFinite(limit) || limit < 0) {
+      toast({ title: 'Ошибка', description: 'Укажите корректный лимит (число ≥ 0)', variant: 'destructive' });
+      return;
+    }
+    setAiSubmitting(true);
+    const expIso = aiUnlimited && aiExpiresAt ? new Date(aiExpiresAt).toISOString() : null;
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ai_daily_limit: limit,
+        ai_unlimited_access: aiUnlimited,
+        ai_unlimited_expires_at: aiUnlimited ? expIso : null,
+        ai_updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', aiTarget.user_id);
+    setAiSubmitting(false);
+    if (error) {
+      toast({ title: 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'AI-доступ обновлён' });
+    setAiTarget(null);
+    fetchUsers();
+  };
+
+
     if (preset === '0') return 0; // no expiry
     if (preset === '-1') {
       const n = parseInt(custom, 10);
