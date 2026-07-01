@@ -12,7 +12,7 @@ import { extractTextFromImage } from '@/utils/imageOcr';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-const DAILY_LIMIT = 5;
+const DEFAULT_DAILY_LIMIT = 5;
 
 type Attachment = { name: string; text: string };
 type ChatMessage = {
