@@ -22,7 +22,6 @@ const AILawyer = () => {
     if (!user) return;
     const { data: prof } = await supabase
       .from('profiles')
-      // @ts-expect-error columns exist post-migration
       .select('ai_daily_limit, ai_unlimited_access, ai_unlimited_expires_at')
       .eq('user_id', user.id)
       .maybeSingle();
