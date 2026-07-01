@@ -284,7 +284,7 @@ const Admin = () => {
     fetchUsers();
   };
 
-
+  const resolveSeconds = (preset: string, custom: string): number | null => {
     if (preset === '0') return 0; // no expiry
     if (preset === '-1') {
       const n = parseInt(custom, 10);
