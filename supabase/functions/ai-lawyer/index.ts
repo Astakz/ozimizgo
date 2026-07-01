@@ -279,8 +279,10 @@ RULES:
     return new Response(JSON.stringify({
       answer,
       used: used + 1,
-      limit: DAILY_LIMIT,
-      remaining: DAILY_LIMIT - used - 1,
+      limit: dailyLimit,
+      remaining: unlimited ? null : Math.max(0, dailyLimit - used - 1),
+      unlimited,
+      unlimitedExpiresAt: unlimited && unlimitedExp ? unlimitedExp.toISOString() : null,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("ai-lawyer error", e);
