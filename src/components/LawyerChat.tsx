@@ -199,10 +199,12 @@ function DocumentPreview({ text }: { text: string }) {
 
 interface LawyerChatProps {
   usedToday: number;
+  dailyLimit?: number;
+  unlimited?: boolean;
   onUsageChange?: (used: number) => void;
 }
 
-export function LawyerChat({ usedToday, onUsageChange }: LawyerChatProps) {
+export function LawyerChat({ usedToday, dailyLimit = DEFAULT_DAILY_LIMIT, unlimited = false, onUsageChange }: LawyerChatProps) {
   const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
