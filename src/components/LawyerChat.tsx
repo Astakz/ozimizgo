@@ -264,7 +264,7 @@ export function LawyerChat({ usedToday, dailyLimit = DEFAULT_DAILY_LIMIT, unlimi
   const send = useCallback(async () => {
     const text = input.trim();
     if ((!text && !pendingFile) || loading || extracting) return;
-    if (usedToday >= DAILY_LIMIT) {
+    if (!unlimited && usedToday >= dailyLimit) {
       toast.error(t('aiLawyer.limitReached'));
       return;
     }
