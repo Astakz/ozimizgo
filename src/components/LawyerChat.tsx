@@ -324,7 +324,7 @@ export function LawyerChat({ usedToday, dailyLimit = DEFAULT_DAILY_LIMIT, unlimi
     clearPending();
   };
 
-  const remaining = DAILY_LIMIT - usedToday;
+  const remaining = unlimited ? Infinity : dailyLimit - usedToday;
 
   return (
     <Card className="shadow-elevated overflow-hidden flex flex-col">
