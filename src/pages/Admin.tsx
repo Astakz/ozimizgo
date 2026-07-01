@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface InviteCode { id: string; code: string; is_used: boolean; created_at: string; used_at: string | null; expires_at: string | null; disabled: boolean; }
-interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; blocked_until: string | null; blocked_reason: string | null; blocked_at: string | null; }
+interface Profile { id: string; user_id: string; name: string; email: string; invite_code: string | null; created_at: string; blocked_until: string | null; blocked_reason: string | null; blocked_at: string | null; ai_daily_limit: number; ai_unlimited_access: boolean; ai_unlimited_expires_at: string | null; }
 interface Document { id: string; user_id: string; original_filename: string; file_type: string; extracted_text: string; generated_objection: string; created_at: string; }
 
 const DURATION_PRESETS: { label: string; seconds: number }[] = [
