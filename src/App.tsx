@@ -35,8 +35,11 @@ const App = () => (
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/ai-lawyer" element={<ProtectedRoute><AILawyer /></ProtectedRoute>} />
+            <Route path="/sign-builder" element={<ProtectedRoute><SignBuilder /></ProtectedRoute>} />
+            <Route path="/sign/:token" element={<SignPage />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="*" element={<NotFound />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
