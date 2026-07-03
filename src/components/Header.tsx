@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus, Menu, Sparkles } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus, Menu, Sparkles, PenLine } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
