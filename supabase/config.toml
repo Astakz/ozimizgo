@@ -5,3 +5,7 @@ verify_jwt = false
 
 [functions.admin-user-action]
 verify_jwt = true
+
+[functions.sign-request]
+verify_jwt = false
+
