@@ -14,6 +14,8 @@ import History from "./pages/History";
 import Profile from "./pages/Profile";
 import Terms from "./pages/Terms";
 import AILawyer from "./pages/AILawyer";
+import SignBuilder from "./pages/SignBuilder";
+import SignPage from "./pages/SignPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
