@@ -413,6 +413,110 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_audit: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          ip: string | null
+          metadata: Json | null
+          request_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          request_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          request_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_audit_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_requests: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          fields: Json
+          file_size: number
+          id: string
+          opened_at: string | null
+          original_file_path: string
+          owner_id: string
+          page_count: number
+          signed_at: string | null
+          signed_file_path: string | null
+          signer_email: string | null
+          signer_ip: string | null
+          signer_name: string | null
+          signer_ua: string | null
+          status: string
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          fields?: Json
+          file_size?: number
+          id?: string
+          opened_at?: string | null
+          original_file_path: string
+          owner_id: string
+          page_count?: number
+          signed_at?: string | null
+          signed_file_path?: string | null
+          signer_email?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          signer_ua?: string | null
+          status?: string
+          title: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          fields?: Json
+          file_size?: number
+          id?: string
+          opened_at?: string | null
+          original_file_path?: string
+          owner_id?: string
+          page_count?: number
+          signed_at?: string | null
+          signed_file_path?: string | null
+          signer_email?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          signer_ua?: string | null
+          status?: string
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -441,6 +545,21 @@ export type Database = {
         Returns: boolean
       }
       generate_unique_username: { Args: never; Returns: string }
+      get_signature_request_by_token: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          fields: Json
+          file_size: number
+          id: string
+          original_file_path: string
+          owner_name: string
+          page_count: number
+          status: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
