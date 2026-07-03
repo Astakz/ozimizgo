@@ -107,7 +107,7 @@ export default function SignPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
-      setDone({ signedAt: data.signedAt, signatureId: data.signatureId, blob: new Blob([bytes], { type: 'application/pdf' }) });
+      setDone({ signedAt: data.signedAt, signatureId: data.signatureId, blob: new Blob([bytes as BlobPart], { type: 'application/pdf' }) });
     } catch (e: any) {
       console.error(e); toast.error(e.message || 'Failed to finalize');
     } finally { setFinalizing(false); }
