@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus, Menu, Sparkles, PenLine } from 'lucide-react';
+import { Scale, Shield, LogOut, Settings, FileStack, UserCircle, FilePlus, Menu, Sparkles, PenLine, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -18,6 +18,7 @@ export function Header() {
   const navItems = [
     { to: '/', label: t('nav.objection'), icon: FilePlus },
     { to: '/ai-lawyer', label: t('nav.aiLawyer'), icon: Sparkles },
+    { to: '/documents', label: 'Documents', icon: FileText },
     { to: '/sign-builder', label: 'E-Sign', icon: PenLine },
     { to: '/profile', label: t('nav.profile'), icon: UserCircle },
     { to: '/history', label: t('nav.history'), icon: FileStack },
