@@ -16,6 +16,7 @@ import Terms from "./pages/Terms";
 import AILawyer from "./pages/AILawyer";
 import SignBuilder from "./pages/SignBuilder";
 import SignPage from "./pages/SignPage";
+import Documents from "./pages/Documents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/ai-lawyer" element={<ProtectedRoute><AILawyer /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
             <Route path="/sign-builder" element={<ProtectedRoute><SignBuilder /></ProtectedRoute>} />
             <Route path="/sign/:token" element={<SignPage />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
