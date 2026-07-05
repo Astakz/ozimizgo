@@ -69,12 +69,16 @@ export default function Documents() {
     return () => obs.disconnect();
   }, [pages]);
 
-  const onSignatureSave = (dataUrl: string) => {
+  const onSignatureSave = (res: any) => {
     setSigModalOpen(false);
     const page = pages.find((p) => p.pageNum === currentPage) || pages[0];
     if (!page) return;
+    const dataUrl: string = typeof res === 'string' ? res : res.dataUrl;
+    const natW: number = typeof res === 'object' && res.naturalWidth ? res.naturalWidth : 100;
+    const natH: number = typeof res === 'object' && res.naturalHeight ? res.naturalHeight : 35;
+    const aspect = natH / natW;
     const w = page.width * 0.28;
-    const h = w * 0.35;
+    const h = w * aspect;
     const id = crypto.randomUUID();
     setSigs((s) => [
       ...s,

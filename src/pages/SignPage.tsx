@@ -208,7 +208,13 @@ export default function SignPage() {
         <SignatureModal
           open={!!modalField}
           onClose={() => setModalField(null)}
-          onSave={(png) => { setValues((v) => ({ ...v, [modalField.id]: png })); setModalField(null); }}
+          format="png"
+          legacy
+          onSave={(res) => {
+            const png = typeof res === 'string' ? res : res.dataUrl;
+            setValues((v) => ({ ...v, [modalField.id]: png }));
+            setModalField(null);
+          }}
         />
       )}
     </div>
