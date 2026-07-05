@@ -22,7 +22,7 @@ export function detectKind(file: File): DocKind {
   return 'unknown';
 }
 
-const RENDER_SCALE = 1.6; // PDF render scale for crispness
+const RENDER_SCALE = 2.2; // PDF render scale — higher = crisper export (~200dpi)
 const A4_W = 794;         // ~96dpi A4 width in px
 const A4_H = 1123;        // ~96dpi A4 height in px
 
