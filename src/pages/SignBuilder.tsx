@@ -43,6 +43,7 @@ interface PageInfo { pageNum: number; canvas: HTMLCanvasElement; pdfWidth: numbe
 
 export default function SignBuilder() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
