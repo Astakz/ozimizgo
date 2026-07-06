@@ -14,6 +14,7 @@ import { renderDocument, detectKind, type RenderedPage } from '@/utils/documentL
 import { SignatureModal } from '@/components/sign/SignatureModal';
 import { PlacedSignature, type PlacedSig } from '@/components/documents/PlacedSignature';
 import { exportToPdf, exportPageToImage, downloadBlob } from '@/utils/pdfExport';
+import { useTranslation } from 'react-i18next';
 
 export default function Documents() {
   const navigate = useNavigate();
