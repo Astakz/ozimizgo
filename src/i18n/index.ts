@@ -10,12 +10,19 @@ i18n
   .use(initReactI18next)
   .init({
     resources: { kk, ru, en },
+    supportedLngs: ['kk', 'ru', 'en'],
     fallbackLng: 'ru',
+    load: 'languageOnly',
+    nonExplicitSupportedLngs: true,
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
     },
   });
+
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') document.documentElement.lang = lng;
+});
 
 export default i18n;
