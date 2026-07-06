@@ -332,6 +332,7 @@ export type Database = {
           full_name: string | null
           id: string
           invite_code: string | null
+          language: string | null
           name: string
           nickname: string | null
           profession: string | null
@@ -355,6 +356,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invite_code?: string | null
+          language?: string | null
           name: string
           nickname?: string | null
           profession?: string | null
@@ -378,6 +380,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           invite_code?: string | null
+          language?: string | null
           name?: string
           nickname?: string | null
           profession?: string | null
