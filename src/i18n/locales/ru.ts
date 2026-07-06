@@ -377,5 +377,24 @@ export const ru = {
         ],
       },
     ],
+    // Documents page
+    'documents.badge': 'Документы · Premium',
+    'documents.title': 'Работа с любым документом',
+    'documents.subtitle': 'Открывайте, просматривайте, подписывайте и скачивайте PDF, DOCX, XLSX, JPG или PNG.',
+    'documents.dropzone': 'Перетащите файл сюда или нажмите для загрузки',
+    'documents.opening': 'Открытие документа...',
+    'documents.formats': 'PDF · DOCX · XLSX · JPG · PNG · Макс. 25 МБ',
+    'documents.action.view': 'Просмотр',
+    'documents.action.sign': 'Подписать',
+    'documents.action.download': 'Скачать',
+    'documents.action.sendToSigner': 'Отправить на подпись',
+    'documents.needOther': 'Нужна подпись другого человека? Используйте E-Sign запросы',
+
+    // SignBuilder page
+    'signBuilder.badge': 'Электронная подпись · Premium',
+    'signBuilder.title': 'Отправить документ на подпись',
+    'signBuilder.subtitle': 'Загрузите PDF, разместите поля, поделитесь безопасной ссылкой.',
+    'signBuilder.dropzone': 'Перетащите PDF сюда или нажмите для загрузки',
+    'signBuilder.maxSize': 'Максимум 20 МБ',
   },
 };

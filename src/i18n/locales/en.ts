@@ -375,5 +375,24 @@ export const en = {
         ],
       },
     ],
+    // Documents page
+    'documents.badge': 'Documents · Premium',
+    'documents.title': 'Work with any document',
+    'documents.subtitle': 'Open, view, sign, and download PDF, DOCX, XLSX, JPG or PNG.',
+    'documents.dropzone': 'Drop file here or click to upload',
+    'documents.opening': 'Opening document...',
+    'documents.formats': 'PDF · DOCX · XLSX · JPG · PNG · Max 25 MB',
+    'documents.action.view': 'View',
+    'documents.action.sign': 'Sign',
+    'documents.action.download': 'Download',
+    'documents.action.sendToSigner': 'Send to signer',
+    'documents.needOther': 'Need someone else to sign? Use E-Sign requests',
+
+    // SignBuilder page
+    'signBuilder.badge': 'E-Signature · Premium',
+    'signBuilder.title': 'Send document for signature',
+    'signBuilder.subtitle': 'Upload a PDF, place fields, share a secure link.',
+    'signBuilder.dropzone': 'Drop PDF here or click to upload',
+    'signBuilder.maxSize': 'Maximum 20 MB',
   },
 };

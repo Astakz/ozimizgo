@@ -376,5 +376,24 @@ export const kk = {
         ],
       },
     ],
+    // Documents page
+    'documents.badge': 'Құжаттар · Premium',
+    'documents.title': 'Кез келген құжатпен жұмыс',
+    'documents.subtitle': 'PDF, DOCX, XLSX, JPG немесе PNG ашыңыз, қараңыз, қол қойыңыз және жүктеп алыңыз.',
+    'documents.dropzone': 'Файлды осында тастаңыз немесе жүктеу үшін басыңыз',
+    'documents.opening': 'Құжат ашылуда...',
+    'documents.formats': 'PDF · DOCX · XLSX · JPG · PNG · Макс. 25 МБ',
+    'documents.action.view': 'Қарау',
+    'documents.action.sign': 'Қол қою',
+    'documents.action.download': 'Жүктеп алу',
+    'documents.action.sendToSigner': 'Қол қоюға жіберу',
+    'documents.needOther': 'Басқа адамның қолы қажет пе? E-Sign сұрауларын қолданыңыз',
+
+    // SignBuilder page
+    'signBuilder.badge': 'Электрондық қолтаңба · Premium',
+    'signBuilder.title': 'Құжатты қол қоюға жіберу',
+    'signBuilder.subtitle': 'PDF жүктеңіз, өрістерді орналастырыңыз, қауіпсіз сілтемемен бөлісіңіз.',
+    'signBuilder.dropzone': 'PDF файлды осында тастаңыз немесе жүктеу үшін басыңыз',
+    'signBuilder.maxSize': 'Максимум 20 МБ',
   },
 };

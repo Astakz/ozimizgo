@@ -15,6 +15,7 @@ import { loadPdf } from '@/utils/pdfjsLoader';
 import type { SignField, SignFieldType } from '@/types/sign';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const FIELD_TYPES: { type: SignFieldType; label: string; icon: any; w: number; h: number }[] = [
   { type: 'signature', label: 'Signature', icon: PenLine, w: 180, h: 60 },
@@ -42,6 +43,7 @@ interface PageInfo { pageNum: number; canvas: HTMLCanvasElement; pdfWidth: numbe
 
 export default function SignBuilder() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -155,18 +157,18 @@ export default function SignBuilder() {
           <div className="max-w-2xl mx-auto animate-fade-in">
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
-                <PenLine className="w-3.5 h-3.5" /> E-Signature · Premium
+                <PenLine className="w-3.5 h-3.5" /> {t('signBuilder.badge')}
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">Send document for signature</h1>
-              <p className="text-muted-foreground">Upload a PDF, place fields, share a secure link.</p>
+              <h1 className="text-3xl sm:text-4xl font-bold mb-3">{t('signBuilder.title')}</h1>
+              <p className="text-muted-foreground">{t('signBuilder.subtitle')}</p>
             </div>
             <label className="block cursor-pointer">
               <div className="border-2 border-dashed border-primary/30 hover:border-primary transition-colors rounded-3xl p-12 text-center bg-white dark:bg-card">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Upload className="w-8 h-8 text-primary" />
                 </div>
-                <p className="font-semibold text-lg">Drop PDF here or click to upload</p>
-                <p className="text-sm text-muted-foreground mt-1">Maximum 20 MB</p>
+                <p className="font-semibold text-lg">{t('signBuilder.dropzone')}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('signBuilder.maxSize')}</p>
                 <input type="file" accept="application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
               </div>
             </label>
