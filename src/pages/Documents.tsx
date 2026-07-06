@@ -220,16 +220,17 @@ export default function Documents() {
 }
 
 function UploadPanel({ onFile, loading, onSendToOther }: { onFile: (f: File) => void; loading: boolean; onSendToOther: () => void }) {
+  const { t } = useTranslation();
   const [drag, setDrag] = useState(false);
   return (
     <div className="flex-1 container mx-auto px-4 py-8 sm:py-12">
       <div className="max-w-3xl mx-auto animate-fade-in">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium mb-4">
-            <FileText className="w-3.5 h-3.5" /> Documents · Premium
+            <FileText className="w-3.5 h-3.5" /> {t('documents.badge')}
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold mb-3 tracking-tight">Work with any document</h1>
-          <p className="text-muted-foreground text-base sm:text-lg">Open, view, sign, and download PDF, DOCX, XLSX, JPG or PNG.</p>
+          <h1 className="text-3xl sm:text-5xl font-bold mb-3 tracking-tight">{t('documents.title')}</h1>
+          <p className="text-muted-foreground text-base sm:text-lg">{t('documents.subtitle')}</p>
         </div>
 
         <label
@@ -243,9 +244,9 @@ function UploadPanel({ onFile, loading, onSendToOther }: { onFile: (f: File) => 
             {loading ? <Loader2 className="w-8 h-8 text-primary animate-spin" /> : <Upload className="w-8 h-8 text-primary" />}
           </div>
           <p className="font-semibold text-lg sm:text-xl">
-            {loading ? 'Opening document...' : 'Drop file here or click to upload'}
+            {loading ? t('documents.opening') : t('documents.dropzone')}
           </p>
-          <p className="text-sm text-muted-foreground mt-2">PDF · DOCX · XLSX · JPG · PNG · Max 25 MB</p>
+          <p className="text-sm text-muted-foreground mt-2">{t('documents.formats')}</p>
           <input
             type="file"
             accept=".pdf,.docx,.doc,.xlsx,.xls,.jpg,.jpeg,.png,application/pdf,image/*"
@@ -257,10 +258,10 @@ function UploadPanel({ onFile, loading, onSendToOther }: { onFile: (f: File) => 
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8">
           {[
-            { icon: FileText, label: 'View' },
-            { icon: PenLine, label: 'Sign' },
-            { icon: Download, label: 'Download' },
-            { icon: Send, label: 'Send to signer' },
+            { icon: FileText, label: t('documents.action.view') },
+            { icon: PenLine, label: t('documents.action.sign') },
+            { icon: Download, label: t('documents.action.download') },
+            { icon: Send, label: t('documents.action.sendToSigner') },
           ].map((s, i) => (
             <div key={i} className="bg-white dark:bg-card border rounded-2xl p-4 text-center">
               <div className="w-10 h-10 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-2">
@@ -273,13 +274,14 @@ function UploadPanel({ onFile, loading, onSendToOther }: { onFile: (f: File) => 
 
         <div className="mt-8 text-center">
           <Button variant="outline" onClick={onSendToOther} className="rounded-2xl h-11">
-            <Send className="w-4 h-4 mr-2" /> Need someone else to sign? Use E-Sign requests
+            <Send className="w-4 h-4 mr-2" /> {t('documents.needOther')}
           </Button>
         </div>
       </div>
     </div>
   );
 }
+
 
 function ThumbnailCanvas({ source }: { source: HTMLCanvasElement }) {
   const ref = useRef<HTMLCanvasElement>(null);
