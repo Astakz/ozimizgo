@@ -15,6 +15,7 @@ import { loadPdf } from '@/utils/pdfjsLoader';
 import type { SignField, SignFieldType } from '@/types/sign';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const FIELD_TYPES: { type: SignFieldType; label: string; icon: any; w: number; h: number }[] = [
   { type: 'signature', label: 'Signature', icon: PenLine, w: 180, h: 60 },
