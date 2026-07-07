@@ -255,7 +255,7 @@ export default function SignBuilder() {
               <Button variant="outline" onClick={shareTG} className="rounded-xl h-11">Telegram</Button>
               <Button variant="outline" onClick={shareEmail} className="rounded-xl h-11"><Mail className="w-4 h-4 mr-1" />Email</Button>
             </div>
-            <Button className="w-full h-11 rounded-xl" onClick={() => navigate('/sign-requests')}>Go to my requests</Button>
+            <Button className="w-full h-11 rounded-xl" onClick={() => navigate('/sign-requests')}>Перейти к моим запросам</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -19,7 +19,7 @@ export function Header() {
     { to: '/', label: t('nav.objection'), icon: FilePlus },
     { to: '/ai-lawyer', label: t('nav.aiLawyer'), icon: Sparkles },
     { to: '/documents', label: 'Documents', icon: FileText },
-    { to: '/sign-builder', label: 'E-Sign', icon: PenLine },
+    { to: '/sign-requests', label: 'E-Sign', icon: PenLine },
     { to: '/profile', label: t('nav.profile'), icon: UserCircle },
     { to: '/history', label: t('nav.history'), icon: FileStack },
   ];
